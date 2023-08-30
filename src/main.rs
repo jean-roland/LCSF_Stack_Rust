@@ -14,12 +14,11 @@ fn main() {
         cmd_id: 0x12,
         att_nb: 1,
         att_arr: vec![
-            LcsfRawAtt {
+            (0x55, LcsfRawAtt {
                 has_subatt: false,
-                att_id: 0x55,
                 payload_size: 5,
                 payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04])
-            },
+            }),
         ],
     };
 
