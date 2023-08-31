@@ -1,5 +1,6 @@
 // Import
 mod lcsf_transcoder;
+mod lcsf_validator;
 use lcsf_transcoder::LcsfModeEnum;
 use lcsf_transcoder::LcsfRawMsg;
 use lcsf_transcoder::LcsfRawAtt;
