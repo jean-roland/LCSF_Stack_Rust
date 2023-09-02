@@ -40,14 +40,10 @@ pub struct LcsfCmdDesc {
     pub att_desc_arr:Vec<(u16, LcsfAttDesc)>,
 }
 
-// Callback prototype
-pub type ProcessCallback = fn(&LcsfValidCmd) -> bool;
-
 // Lcsf protocol descriptor structure */
 #[derive(Debug, PartialEq)]
 pub struct LcsfProtDesc {
     pub cmd_desc_arr:Vec<(u16, LcsfCmdDesc)>,
-    pub fn_process_msg:ProcessCallback,
 }
 
 // Lcsf valid attribute payload union
@@ -231,7 +227,8 @@ fn test_validate_att_rec() {
 /// Validate a received lcsf raw message
 /// \param desc_arr (protocol id, protocol descriptor) array reference
 /// \param rx_msg received message reference
-pub fn validate_msg(prot_desc_arr:&Vec<(u16, &LcsfProtDesc)>, rx_msg:&LcsfRawMsg) -> Result<(LcsfValidCmd, ProcessCallback), LcsfValidateErrorEnum> {
+pub fn validate_msg(prot_desc_arr:&Vec<(u16, &LcsfProtDesc)>, rx_msg:&LcsfRawMsg)
+    -> Result<(LcsfValidCmd, u16), LcsfValidateErrorEnum> {
     let mut valid_cmd = LcsfValidCmd {
         cmd_id: 0,
         att_arr: Vec::new(),
@@ -259,7 +256,7 @@ pub fn validate_msg(prot_desc_arr:&Vec<(u16, &LcsfProtDesc)>, rx_msg:&LcsfRawMsg
         let (_, valid_att) = validate_att_rec(*att_id, att_desc, &rx_msg.att_arr)?;
         valid_cmd.att_arr.push(valid_att);
     }
-    return Ok((valid_cmd, prot_desc.fn_process_msg));
+    return Ok((valid_cmd, rx_msg.prot_id));
 }
 
 #[test]
@@ -311,11 +308,9 @@ fn test_validate_msg() {
     // Test valid
     match validate_msg(&prot_desc_arr, &TEST_RAW_MSG) {
         Err(err) => panic!("decode_att_rec failed with error: {err:?}, but should not fail"),
-        Ok((valid_cmd, callback)) => {
+        Ok((valid_cmd, id)) => {
             assert_eq!(valid_cmd, *TEST_VALID_CMD);
-            if callback != dummy_process {
-                panic!("Invalid function pointer");
-            }
+            assert_eq!(id, 0xab);
         },
     }
 }
@@ -562,7 +557,7 @@ fn test_fill_att_rec() {
 /// \param prot_id protocol id
 /// \param cmd_desc command descriptor reference
 /// \param valid_cmd valid command reference
-fn encode_valid(prot_id:u16, cmd_desc:&LcsfCmdDesc, valid_cmd:&LcsfValidCmd) -> Option<LcsfRawMsg> {
+pub fn encode_valid(prot_id:u16, cmd_desc:&LcsfCmdDesc, valid_cmd:&LcsfValidCmd) -> Option<LcsfRawMsg> {
     // Init raw message
     let mut raw_msg = LcsfRawMsg {
         prot_id: prot_id,
@@ -609,14 +604,8 @@ use lazy_static::lazy_static;
 use lcsf_transcoder::TEST_RAW_MSG;
 
 #[cfg(test)]
-fn dummy_process(_: &LcsfValidCmd) -> bool {
-    return false;
-}
-
-#[cfg(test)]
 lazy_static! {
     static ref TEST_PROT_DESC:LcsfProtDesc = LcsfProtDesc {
-        fn_process_msg: dummy_process,
         cmd_desc_arr: vec![
             (0x12, LcsfCmdDesc {
                 att_desc_arr: vec![
