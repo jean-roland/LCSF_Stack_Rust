@@ -96,7 +96,8 @@ fn validate_data_type(data_size:usize, data_type:LcsfDataType) -> bool {
 /// \param att_id attribute id value
 /// \param att_desc attribute descriptor reference
 /// \param rx_att_arr received (id, attribute) array reference
-fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRawAtt)]) -> Result<(usize, LcsfValidAtt), LcsfValidateErrorEnum> {
+fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRawAtt)])
+    -> Result<(usize, LcsfValidAtt), LcsfValidateErrorEnum> {
     let mut valid_att = LcsfValidAtt {
         payload: LcsfValidAttPayload::Data(Vec::new()),
     };
@@ -227,7 +228,7 @@ fn test_validate_att_rec() {
 /// Validate a received lcsf raw message
 /// \param desc_arr (protocol id, protocol descriptor) array reference
 /// \param rx_msg received message reference
-pub fn validate_msg(prot_desc_arr:&Vec<(u16, &LcsfProtDesc)>, rx_msg:&LcsfRawMsg)
+pub fn validate_msg(prot_desc_arr:&[(u16, &LcsfProtDesc)], rx_msg:&LcsfRawMsg)
     -> Result<(LcsfValidCmd, u16), LcsfValidateErrorEnum> {
     let mut valid_cmd = LcsfValidCmd {
         cmd_id: 0,

@@ -343,11 +343,15 @@ fn fill_att_header(lcsf_mode:LcsfModeEnum, att_id:u16, att:&LcsfRawAtt) -> Vec<u
 #[test]
 fn test_fill_att_header() {
     // Test small
-    assert_eq!(fill_att_header(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[0].0, &TEST_RAW_MSG.att_arr[0].1), vec![0x55, 0x05]);
-    assert_eq!(fill_att_header(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[1].0, &TEST_RAW_MSG.att_arr[1].1), vec![0xff, 0x02]);
+    assert_eq!(fill_att_header(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[0].0,
+        &TEST_RAW_MSG.att_arr[0].1), vec![0x55, 0x05]);
+    assert_eq!(fill_att_header(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[1].0,
+        &TEST_RAW_MSG.att_arr[1].1), vec![0xff, 0x02]);
     // Test normal
-    assert_eq!(fill_att_header(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[0].0, &TEST_RAW_MSG.att_arr[0].1), vec![0x55, 0x00, 0x05, 0x00]);
-    assert_eq!(fill_att_header(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[1].0, &TEST_RAW_MSG.att_arr[1].1), vec![0x7f, 0x80, 0x02, 0x00]);
+    assert_eq!(fill_att_header(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[0].0,
+        &TEST_RAW_MSG.att_arr[0].1), vec![0x55, 0x00, 0x05, 0x00]);
+    assert_eq!(fill_att_header(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[1].0,
+        &TEST_RAW_MSG.att_arr[1].1), vec![0x7f, 0x80, 0x02, 0x00]);
 }
 
 /// Recursively encode a LcsfRawAtt array into a buffer
@@ -380,9 +384,11 @@ fn encode_att_rec(lcsf_mode:LcsfModeEnum, att_id:u16, att:&LcsfRawAtt) -> Vec<u8
 #[test]
 fn test_encode_att_rec() {
     // Test small
-    assert_eq!(encode_att_rec(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[1].0, &TEST_RAW_MSG.att_arr[1].1), RX_MSG_SMALL[10..32]);
+    assert_eq!(encode_att_rec(LcsfModeEnum::Small, TEST_RAW_MSG.att_arr[1].0,
+        &TEST_RAW_MSG.att_arr[1].1), RX_MSG_SMALL[10..32]);
     // Test normal
-    assert_eq!(encode_att_rec(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[1].0, &TEST_RAW_MSG.att_arr[1].1), RX_MSG_NORMAL[15..45]);
+    assert_eq!(encode_att_rec(LcsfModeEnum::Normal, TEST_RAW_MSG.att_arr[1].0,
+        &TEST_RAW_MSG.att_arr[1].1), RX_MSG_NORMAL[15..45]);
 }
 
 /// Encode a LcsfRawMsg into a buffer
