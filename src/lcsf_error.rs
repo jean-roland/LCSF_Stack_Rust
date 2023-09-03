@@ -89,14 +89,61 @@ pub fn encode_error(lcsf_mode:LcsfModeEnum, error_loc:LcsfEpLocEnum, error_type:
             }),
         ],
     };
-    // Encode the message with transcoder
+    // Encode the message with encoder
     return lcsf_transcoder::encode_buff(lcsf_mode, &error_msg);
 }
 
+/// Process a lcsf error message
+/// \param valid_cmd validated error message reference
+pub fn process_error(valid_cmd:LcsfValidCmd) -> (&'static str, &'static str) {
+    let mut err_loc = 0;
+    let mut err_type = 0;
+    // Retrieve error information
+    if let LcsfValidAttPayload::Data(data) = &valid_cmd.att_arr[LCSF_EP_LOC_ATT_ID as usize].payload {
+        err_loc = data[0];
+    };
+    if let LcsfValidAttPayload::Data(data) = &valid_cmd.att_arr[LCSF_EP_TYPE_ATT_ID as usize].payload {
+        err_type = data[0];
+    };
+    // Turn enum into string
+    let loc_str:&str;
+    let type_str:&str;
+    match err_loc {
+        0 => {
+            loc_str = "Decoder";
+            type_str = match err_type {
+                0 => "Bad format",
+                1 => "Overflow",
+                _ => "Unknown",
+            };
+        },
+        1 => {
+            loc_str = "Validator";
+            type_str = match err_type {
+                0 => "Unknown protocol id",
+                1 => "Unknown command id",
+                2 => "Unknown attribute id",
+                3 => "Too many attributes received",
+                4 => "Missing mandatory attribute",
+                5 => "Wrong attribute data type",
+                _ => "Unknown",
+            };
+        },
+        _ => {
+            loc_str = "Unknown";
+            type_str = "Unknown";
+        },
+    };
+    return (loc_str, type_str);
+}
+
 #[cfg(test)]
+mod tests {
+use super::*;
+
 use lcsf_transcoder::LcsfDecodeErrorEnum;
-#[cfg(test)]
 use lcsf_validator::LcsfValidateErrorEnum;
+use lcsf_validator::LcsfValidAtt;
 
 #[test]
 pub fn test_encode_error() {
@@ -110,42 +157,36 @@ pub fn test_encode_error() {
         LcsfDecodeErrorEnum::FormatErr as u8));
 }
 
-/// Process a lcsf error message
-/// \param valid_cmd validated error message reference
-pub fn process_error(valid_cmd:&LcsfValidCmd) {
-    let mut err_loc = 0;
-    let mut err_type = 0;
-    // Retrieve error information
-    if let LcsfValidAttPayload::Data(data) = &valid_cmd.att_arr[LCSF_EP_LOC_ATT_ID as usize].payload {
-        err_loc = data[0];
+#[test]
+pub fn test_process_error() {
+    let mut valid_cmd = LcsfValidCmd {
+        cmd_id: LCSF_EP_ERR_CMD_ID,
+        att_arr: vec![
+            LcsfValidAtt {
+                payload: LcsfValidAttPayload::Data(vec![0x00]),
+            },
+            LcsfValidAtt {
+                payload: LcsfValidAttPayload::Data(vec![0x01]),
+            },
+        ],
     };
-    if let LcsfValidAttPayload::Data(data) = &valid_cmd.att_arr[LCSF_EP_TYPE_ATT_ID as usize].payload {
-        err_type = data[0];
+    let (mut loc_str, mut type_str) = process_error(valid_cmd);
+    assert_eq!(loc_str, "Decoder");
+    assert_eq!(type_str, "Overflow");
+
+    valid_cmd = LcsfValidCmd {
+        cmd_id: LCSF_EP_ERR_CMD_ID,
+        att_arr: vec![
+            LcsfValidAtt {
+                payload: LcsfValidAttPayload::Data(vec![0x01]),
+            },
+            LcsfValidAtt {
+                payload: LcsfValidAttPayload::Data(vec![0x04]),
+            },
+        ],
     };
-    // Turn enum into string
-    let type_str:&str;
-    let loc_str = match err_loc {
-        0 => "Decoder",
-        1 => "Validator",
-        _ => "Unknown",
-    };
-    if err_loc == 0 {
-        type_str = match err_type {
-            0 => "Bad format",
-            1 => "Overflow",
-            _ => "Unknown",
-        };
-    } else {
-        type_str = match err_type {
-            0 => "Unknown protocol id",
-            1 => "Unknown command id",
-            2 => "Unknown attribute id",
-            3 => "Too many attributes received",
-            4 => "Missing mandatory attribute",
-            5 => "Wrong attribute data type",
-            _ => "Unknown",
-        };
-    }
-    // Notify the error
-    println!("[lcsf_error]: Received error, location: {loc_str}, type: {type_str}");
+    (loc_str, type_str) = process_error(valid_cmd);
+    assert_eq!(loc_str, "Validator");
+    assert_eq!(type_str, "Missing mandatory attribute");
+}
 }

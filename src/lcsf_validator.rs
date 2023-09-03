@@ -226,16 +226,15 @@ fn test_validate_att_rec() {
 }
 
 /// Validate a received lcsf raw message
-/// \param desc_arr (protocol id, protocol descriptor) array reference
+/// \param prot_desc_map (protocol id, protocol descriptor) hash map reference
 /// \param rx_msg received message reference
-pub fn validate_msg(prot_desc_arr:&[(u16, &LcsfProtDesc)], rx_msg:&LcsfRawMsg)
+pub fn validate_msg(prot_desc_map:&HashMap<u16, &LcsfProtDesc>, rx_msg:&LcsfRawMsg)
     -> Result<(LcsfValidCmd, u16), LcsfValidateErrorEnum> {
     let mut valid_cmd = LcsfValidCmd {
         cmd_id: 0,
         att_arr: Vec::new(),
     };
     // Check protocol id valid
-    let prot_desc_map:HashMap<u16, &LcsfProtDesc> = prot_desc_arr.iter().cloned().collect();
     let prot_desc = match prot_desc_map.get(&rx_msg.prot_id) {
         None => return Err(LcsfValidateErrorEnum::UnknownProtId),
         Some(desc) => desc,
@@ -263,7 +262,8 @@ pub fn validate_msg(prot_desc_arr:&[(u16, &LcsfProtDesc)], rx_msg:&LcsfRawMsg)
 #[test]
 fn test_validate_msg() {
     // Test data
-    let prot_desc_arr:Vec<(u16, &LcsfProtDesc)> = vec![(0xab, &TEST_PROT_DESC)];
+    let prot_desc_map:HashMap<u16, &LcsfProtDesc> =
+        HashMap::from([(0xab as u16, &TEST_PROT_DESC as &LcsfProtDesc)]);
     let mut bad_msg = LcsfRawMsg {
         prot_id: 0,
         cmd_id: 0,
@@ -292,22 +292,22 @@ fn test_validate_msg() {
         ],
     };
     // Test error
-    match validate_msg(&prot_desc_arr, &bad_msg) {
+    match validate_msg(&prot_desc_map, &bad_msg) {
         Ok(_) => panic!("validate_msg should fail"),
         Err(err) => assert_eq!(err, LcsfValidateErrorEnum::UnknownProtId),
     }
     bad_msg.prot_id = 0xab;
-    match validate_msg(&prot_desc_arr, &bad_msg) {
+    match validate_msg(&prot_desc_map, &bad_msg) {
         Ok(_) => panic!("validate_msg should fail"),
         Err(err) => assert_eq!(err, LcsfValidateErrorEnum::UnknownCmdId),
     }
     bad_msg.cmd_id = 0x12;
-    match validate_msg(&prot_desc_arr, &bad_msg) {
+    match validate_msg(&prot_desc_map, &bad_msg) {
         Ok(_) => panic!("validate_msg should fail"),
         Err(err) => assert_eq!(err, LcsfValidateErrorEnum::TooManyAtt),
     }
     // Test valid
-    match validate_msg(&prot_desc_arr, &TEST_RAW_MSG) {
+    match validate_msg(&prot_desc_map, &TEST_RAW_MSG) {
         Err(err) => panic!("decode_att_rec failed with error: {err:?}, but should not fail"),
         Ok((valid_cmd, id)) => {
             assert_eq!(valid_cmd, *TEST_VALID_CMD);

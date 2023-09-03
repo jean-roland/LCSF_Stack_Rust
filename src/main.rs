@@ -3,6 +3,8 @@ mod lcsf_transcoder;
 mod lcsf_validator;
 mod lcsf_error;
 
+use std::collections::HashMap;
+
 use lcsf_transcoder::LcsfModeEnum;
 use lcsf_transcoder::LcsfRawMsg;
 use lcsf_transcoder::LcsfRawAtt;
@@ -25,15 +27,6 @@ fn dummy_process(cmd: &LcsfValidCmd){
     if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
         println!("Command received:, id: {}, data: {:?}", cmd.cmd_id, data);
     };
-}
-
-fn dispatch_valid_cmd(prot_id: u16, valid_cmd: &LcsfValidCmd) {
-    match prot_id {
-        lcsf_error::LCSF_EP_PROT_ID_SMALL => lcsf_error::process_error(valid_cmd),
-        lcsf_error::LCSF_EP_PROT_ID_NORMAL => lcsf_error::process_error(valid_cmd),
-        0xab => dummy_process(valid_cmd),
-        _ => {},
-    }
 }
 
 // Main
@@ -82,9 +75,10 @@ fn main() {
             },
         ]
     };
-    let prot_desc_arr:Vec<(u16, &LcsfProtDesc)> = vec![
-        (lcsf_error::LCSF_EP_PROT_ID_SMALL, &lcsf_error::LCSF_EP_PROT_DESC), (0xab, &basic_desc),
-    ];
+    let prot_desc_map:HashMap<u16, &LcsfProtDesc> = HashMap::from([
+        (0xab, &basic_desc),
+        (lcsf_error::LCSF_EP_PROT_ID_SMALL, &lcsf_error::LCSF_EP_PROT_DESC),
+    ]);
 
     // Transcoder
     let raw_msg = match lcsf_transcoder::decode_buff(LcsfModeEnum::Small, BASIC_MSG) {
@@ -95,16 +89,16 @@ fn main() {
     let buff = lcsf_transcoder::encode_buff(LcsfModeEnum::Normal, &basic_raw_msg);
     println!("Test encode: {buff:?}");
     // Validator
-    let (valid_msg, prot_id) = match lcsf_validator::validate_msg(&prot_desc_arr, &basic_raw_msg) {
+    let (valid_msg, prot_id) = match lcsf_validator::validate_msg(&prot_desc_map, &basic_raw_msg) {
         Err(err) => panic!("validate_msg failed with err {err:?} but should not fail"),
         Ok((msg, id)) => (msg, id),
     };
-    println!("Test validate: {valid_msg:?}");
-    dispatch_valid_cmd(prot_id, &valid_msg);
+    println!("Test validate: {prot_id}, {valid_msg:?}");
+    dummy_process(&valid_msg);
     let raw_msg = lcsf_validator::encode_valid(0xab, &basic_desc.cmd_desc_arr[0].1, &basic_valid_cmd).unwrap();
     println!("Test encode valid: {raw_msg:?}");
     // Error
     let buff = lcsf_error::encode_error(LcsfModeEnum::Normal, LcsfEpLocEnum::ValidationError, LcsfValidateErrorEnum::UnknownAttId as u8);
     println!("Test encode error: {buff:?}");
-    lcsf_error::process_error(&err_valid_cmd);
+    lcsf_error::process_error(err_valid_cmd);
 }

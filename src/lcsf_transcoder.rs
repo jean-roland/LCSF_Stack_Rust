@@ -13,7 +13,7 @@ use core::slice::Iter;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfDecodeErrorEnum {
     FormatErr = 0x00, // Message formatting error, missing or leftover data compared to what's expected
-    // OverflowErr = 0x01, // The message is too big/complex to be processed by the module (unused)
+    // OverflowErr = 0x01, // The message is too big/complex to be processed by the module
 }
 
 /// Lcsf mode enum
