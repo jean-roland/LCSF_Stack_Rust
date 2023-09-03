@@ -8,12 +8,11 @@
 use lazy_static::lazy_static;
 
 use crate::lcsf_transcoder;
-use crate::lcsf_validator;
 use lcsf_transcoder::LcsfModeEnum;
 use lcsf_transcoder::LcsfRawMsg;
 use lcsf_transcoder::LcsfRawAtt;
 use lcsf_transcoder::LcsfRawAttPayload;
-
+use crate::lcsf_validator;
 use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfAttDesc;

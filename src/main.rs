@@ -1,15 +1,17 @@
-// Import
+/// author: Jean-Roland Gosse
+/// desc: Example main
+///
+/// This file is part of LCSF Stack Rust.
+/// Spec details at https://jean-roland.github.io/LCSF_Doc/
+/// You should have received a copy of the GNU Lesser General Public License
+/// along with this program. If not, see <https://www.gnu.org/licenses/>
+
+// Imports
+use lazy_static::lazy_static;
+
 mod lcsf_transcoder;
-mod lcsf_validator;
-mod lcsf_error;
-
-use std::collections::HashMap;
-
 use lcsf_transcoder::LcsfModeEnum;
-use lcsf_transcoder::LcsfRawMsg;
-use lcsf_transcoder::LcsfRawAtt;
-use lcsf_transcoder::LcsfRawAttPayload;
-
+mod lcsf_validator;
 use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfAttDesc;
@@ -17,33 +19,13 @@ use lcsf_validator::LcsfDataType;
 use lcsf_validator::LcsfValidCmd;
 use lcsf_validator::LcsfValidAtt;
 use lcsf_validator::LcsfValidAttPayload;
-use lcsf_validator::LcsfValidateErrorEnum;
+mod lcsf_error;
+mod lcsf_core;
+use lcsf_core::LcsfCore;
 
-use lcsf_error::LcsfEpLocEnum;
-
-const BASIC_MSG:&'static [u8] = &[0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
-
-fn dummy_process(cmd: &LcsfValidCmd){
-    if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
-        println!("Command received:, id: {}, data: {:?}", cmd.cmd_id, data);
-    };
-}
-
-// Main
-fn main() {
-    let basic_raw_msg = LcsfRawMsg {
-        prot_id: 0xab,
-        cmd_id: 0x12,
-        att_nb: 1,
-        att_arr: vec![
-            (0x55, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 5,
-                payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04])
-            }),
-        ],
-    };
-    let basic_desc = LcsfProtDesc {
+lazy_static! {
+    // Example descriptor
+    static ref EXAMPLE_DESC:LcsfProtDesc = LcsfProtDesc {
         cmd_desc_arr: vec![
             (0x12, LcsfCmdDesc {
                 att_desc_arr: vec![
@@ -56,7 +38,24 @@ fn main() {
             }),
         ]
     };
-    let basic_valid_cmd = LcsfValidCmd {
+}
+
+// Function called when a protocol received a valid command
+fn example_process(cmd:LcsfValidCmd){
+    if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
+        println!("[Protocol 0xab handle]: Command received:, id: {}, data: {:?}", cmd.cmd_id, data);
+    };
+}
+
+// Function called when protocol sends a message
+fn example_send(buff:Vec<u8>) {
+    println!("Buffer to send: {buff:?}");
+}
+
+// Main
+fn main() {
+    // Example data
+    let example_valid_cmd = LcsfValidCmd {
         cmd_id: 0x12,
         att_arr: vec![
             LcsfValidAtt {
@@ -64,41 +63,24 @@ fn main() {
             },
         ]
     };
-    let err_valid_cmd = LcsfValidCmd {
-        cmd_id: 0x00,
-        att_arr: vec![
-            LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(vec![0x00]),
-            },
-            LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(vec![0x01]),
-            },
-        ]
-    };
-    let prot_desc_map:HashMap<u16, &LcsfProtDesc> = HashMap::from([
-        (0xab, &basic_desc),
-        (lcsf_error::LCSF_EP_PROT_ID_SMALL, &lcsf_error::LCSF_EP_PROT_DESC),
-    ]);
+    let example_buff:Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
+    let err_buff:Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01];
+    let bad_data:Vec<u8> = vec![0xab, 0x10, 0x00];
 
-    // Transcoder
-    let raw_msg = match lcsf_transcoder::decode_buff(LcsfModeEnum::Small, BASIC_MSG) {
-        Err(err) => panic!("decode_buff failed with err {err:?} but should not fail"),
-        Ok(msg) => msg,
-    };
-    println!("Test decode: {raw_msg:?}");
-    let buff = lcsf_transcoder::encode_buff(LcsfModeEnum::Normal, &basic_raw_msg);
-    println!("Test encode: {buff:?}");
-    // Validator
-    let (valid_msg, prot_id) = match lcsf_validator::validate_msg(&prot_desc_map, &basic_raw_msg) {
-        Err(err) => panic!("validate_msg failed with err {err:?} but should not fail"),
-        Ok((msg, id)) => (msg, id),
-    };
-    println!("Test validate: {prot_id}, {valid_msg:?}");
-    dummy_process(&valid_msg);
-    let raw_msg = lcsf_validator::encode_valid(0xab, &basic_desc.cmd_desc_arr[0].1, &basic_valid_cmd).unwrap();
-    println!("Test encode valid: {raw_msg:?}");
-    // Error
-    let buff = lcsf_error::encode_error(LcsfModeEnum::Normal, LcsfEpLocEnum::ValidationError, LcsfValidateErrorEnum::UnknownAttId as u8);
-    println!("Test encode error: {buff:?}");
-    lcsf_error::process_error(err_valid_cmd);
+    // Create lcsf core
+    let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
+    // Add protocol
+    lcsf_core.add_protocol(0xab, &EXAMPLE_DESC, example_process);
+    // Receive buffer
+    println!("Input buffer: {example_buff:?}");
+    lcsf_core.receive_buff(&example_buff);
+    // Send command
+    println!("Input command: {example_valid_cmd:?}");
+    lcsf_core.send_cmd(0xab, &example_valid_cmd);
+    // Receive error
+    println!("Input error: {err_buff:?}");
+    lcsf_core.receive_buff(&err_buff);
+    // Receive bad data
+    println!("Input bad date: {bad_data:?}");
+    lcsf_core.receive_buff(&bad_data);
 }
