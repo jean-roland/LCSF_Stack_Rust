@@ -1,0 +1,16 @@
+version: 2.1
+
+jobs:
+  run-ci:
+    docker:
+      - image: cimg/rust:1.72.0
+    steps:
+      - checkout
+      - run: cargo build
+      - run: cargo test
+      - run: cargo fmt --check
+
+workflows:
+  run-ci-workflow:
+    jobs:
+      - run-ci
