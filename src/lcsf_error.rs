@@ -161,7 +161,7 @@ mod tests {
     use lcsf_validator::LcsfValidateErrorEnum;
 
     #[test]
-    pub fn test_encode_error() {
+    fn test_encode_error() {
         // Test data
         let buff_small: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x05];
         let buff_normal: Vec<u8> = vec![
@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_process_error() {
+    fn test_process_error() {
         let mut valid_cmd = LcsfValidCmd {
             cmd_id: LCSF_EP_ERR_CMD_ID,
             att_arr: vec![

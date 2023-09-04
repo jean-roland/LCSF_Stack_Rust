@@ -615,7 +615,7 @@ pub fn encode_valid(
 }
 
 #[test]
-pub fn test_encode_valid() {
+fn test_encode_valid() {
     // Test data
     let bad_cmd = LcsfValidCmd {
         cmd_id: 0x12,
