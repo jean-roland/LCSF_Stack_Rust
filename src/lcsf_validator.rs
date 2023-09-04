@@ -2,9 +2,11 @@
 /// desc: Light Command Set Format validator module
 ///
 /// This file is part of LCSF Stack Rust.
+/// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
 
+// Imports
 use core::mem::size_of;
 use std::collections::HashMap;
 
@@ -13,9 +15,8 @@ use lcsf_transcoder::LcsfRawMsg;
 use lcsf_transcoder::LcsfRawAtt;
 use lcsf_transcoder::LcsfRawAttPayload;
 
-// *** Types ***
-
 // Data type enum
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfDataType {
     Uint8,
@@ -29,7 +30,7 @@ pub enum LcsfDataType {
 // Lcsf attribute descriptor structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfAttDesc {
-    pub is_optional:bool, // Indicates if is optional
+    pub is_optional:bool, // Indicates if attribute optional
     pub data_type:LcsfDataType,
     pub subatt_desc_arr:Vec<(u16, LcsfAttDesc)>,
 }
@@ -69,13 +70,15 @@ pub struct LcsfValidCmd {
 /// Lcsf decoding error enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfValidateErrorEnum {
-    UnknownProtId = 0x00,
-    UnknownCmdId = 0x01,
-    UnknownAttId = 0x02,
-    TooManyAtt = 0x03,
-    MissMandatoryAtt = 0x04,
-    WrongAttDataType = 0x05,
+    UnknownProtId = 0x00, // Unknown protocol id
+    UnknownCmdId = 0x01, // Unknown command id
+    UnknownAttId = 0x02, // Unknown attribute id
+    TooManyAtt = 0x03, // Too many attributes received
+    MissMandatoryAtt = 0x04, // Missing mandatory attribute
+    WrongAttDataType = 0x05, // Wrong attribute data type
 }
+
+// *** Validate raw ***
 
 /// Validate the data size of received attribute payload
 /// \param data_size size of the data
@@ -315,6 +318,8 @@ fn test_validate_msg() {
         },
     }
 }
+
+// *** Encode valid ***
 
 /// Fill a raw attribute info from a valid attribute
 /// \param data_type attribute data type from descriptor
@@ -599,6 +604,7 @@ pub fn test_encode_valid() {
 
 
 
+// Test data
 #[cfg(test)]
 use lazy_static::lazy_static;
 #[cfg(test)]

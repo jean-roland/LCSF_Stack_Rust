@@ -2,25 +2,26 @@
 /// desc: Light Command Set Format transcoder module
 ///
 /// This file is part of LCSF Stack Rust.
+/// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
 
+// Imports
 use core::slice::Iter;
 
-// *** Types ***
+/// Lcsf representation mode enum
+#[allow(dead_code)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum LcsfModeEnum {
+    Small = 0, // Smaller size lcsf (1 byte / field)
+    Normal = 1, // Regular size lcsf (2 bytes / field)
+}
 
 /// Lcsf decoding error enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfDecodeErrorEnum {
     FormatErr = 0x00, // Message formatting error, missing or leftover data compared to what's expected
-    // OverflowErr = 0x01, // The message is too big/complex to be processed by the module
-}
-
-/// Lcsf mode enum
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum LcsfModeEnum {
-    Small = 0, // Smaller size LCSF (1 byte / field)
-    Normal = 1, // Regular size LCSF (2 bytes / field)
+    // OverflowErr = 0x01, // The message is too big/complex to be processed by the module (unused here)
 }
 
 /// Lcsf raw attribute payload union
@@ -415,7 +416,9 @@ fn test_encode_buff() {
     assert_eq!(encode_buff(LcsfModeEnum::Normal, &TEST_RAW_MSG), RX_MSG_NORMAL);
 }
 
-// *** Test data ***
+
+
+// Test data
 #[cfg(test)]
 use lazy_static::lazy_static;
 

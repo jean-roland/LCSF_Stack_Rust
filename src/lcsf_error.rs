@@ -2,9 +2,11 @@
 /// desc: Light Command Set Format error module
 ///
 /// This file is part of LCSF Stack Rust.
+/// Spec info at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
 
+// Imports
 use lazy_static::lazy_static;
 
 use crate::lcsf_transcoder;
@@ -20,8 +22,6 @@ use lcsf_validator::LcsfDataType;
 use lcsf_validator::LcsfValidCmd;
 use lcsf_validator::LcsfValidAttPayload;
 
-// *** Types ***
-
 // Lcsf error protocol (Lcsf ep) id
 pub const LCSF_EP_PROT_ID_NORMAL:u16 = 0xFFFF;
 pub const LCSF_EP_PROT_ID_SMALL:u16 = 0x00FF;
@@ -32,7 +32,7 @@ pub enum LcsfEpLocEnum {
     ValidationError = 0x01,
 }
 
-// LCSF_EP protocol description
+// Lcsf ep protocol description
 lazy_static! {
     pub static ref LCSF_EP_PROT_DESC:LcsfProtDesc = LcsfProtDesc {
         cmd_desc_arr: vec![
@@ -54,7 +54,7 @@ lazy_static! {
     };
 }
 
-// LCSF_EP constants
+// Lcsf ep constants
 const LCSF_EP_ERR_CMD_ID:u16 = 0x0000;
 const LCSF_EP_LOC_ATT_ID:u16 = 0x0000;
 const LCSF_EP_TYPE_ATT_ID:u16 = 0x0001;
@@ -136,6 +136,7 @@ pub fn process_error(valid_cmd:LcsfValidCmd) -> (&'static str, &'static str) {
     return (loc_str, type_str);
 }
 
+// Tests
 #[cfg(test)]
 mod tests {
 use super::*;
