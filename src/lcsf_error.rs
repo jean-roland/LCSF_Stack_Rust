@@ -106,7 +106,7 @@ pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_typ
 
 /// Process a lcsf error message
 /// \param valid_cmd validated error message reference
-pub fn process_error(valid_cmd: LcsfValidCmd) -> (&'static str, &'static str) {
+pub fn process_error(valid_cmd: &LcsfValidCmd) -> (&str, &str) {
     let mut err_loc = 0;
     let mut err_type = 0;
     // Retrieve error information
@@ -199,7 +199,7 @@ mod tests {
                 },
             ],
         };
-        let (mut loc_str, mut type_str) = process_error(valid_cmd);
+        let (mut loc_str, mut type_str) = process_error(&valid_cmd);
         assert_eq!(loc_str, "Decoder");
         assert_eq!(type_str, "Overflow");
 
@@ -214,7 +214,7 @@ mod tests {
                 },
             ],
         };
-        (loc_str, type_str) = process_error(valid_cmd);
+        (loc_str, type_str) = process_error(&valid_cmd);
         assert_eq!(loc_str, "Validator");
         assert_eq!(type_str, "Missing mandatory attribute");
     }

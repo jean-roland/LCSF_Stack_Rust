@@ -52,7 +52,7 @@ fn example_process(cmd: LcsfValidCmd) {
 // Custom function called when an lcsf error message is received
 #[allow(dead_code)]
 fn example_err_cb(cmd: LcsfValidCmd) {
-    let (loc_str, type_str) = lcsf_error::process_error(cmd);
+    let (loc_str, type_str) = lcsf_error::process_error(&cmd);
     println!("Custom function received error, location: {loc_str}, type: {type_str}");
 }
 
