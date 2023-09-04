@@ -35,7 +35,7 @@ pub struct LcsfCore {
 /// \param valid_cmd validated error command
 fn def_process_error(valid_cmd:LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(valid_cmd);
-    println!("[lcsf_core]: Received error, location: {loc_str}, type: {type_str}");
+    println!("[{}:{}]: Received error, location: {loc_str}, type: {type_str}", module_path!(), line!());
 }
 
 impl LcsfCore {
