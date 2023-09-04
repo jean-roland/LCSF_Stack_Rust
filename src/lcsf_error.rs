@@ -77,7 +77,7 @@ pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_typ
     }
     // Create raw message
     let error_msg = LcsfRawMsg {
-        prot_id: prot_id,
+        prot_id,
         cmd_id: LCSF_EP_ERR_CMD_ID,
         att_nb: LCSF_EP_ERR_CMD_ATT_NB,
         att_arr: vec![
@@ -100,7 +100,7 @@ pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_typ
         ],
     };
     // Encode the message with encoder
-    return lcsf_transcoder::encode_buff(lcsf_mode, &error_msg);
+    lcsf_transcoder::encode_buff(lcsf_mode, &error_msg)
 }
 
 /// Process a lcsf error message
@@ -147,7 +147,7 @@ pub fn process_error(valid_cmd: &LcsfValidCmd) -> (&str, &str) {
             type_str = "Unknown";
         }
     };
-    return (loc_str, type_str);
+    (loc_str, type_str)
 }
 
 // Tests

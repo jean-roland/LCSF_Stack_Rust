@@ -51,7 +51,7 @@ impl LcsfCore {
             _ => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
         };
         LcsfCore {
-            do_gen_err: do_gen_err,
+            do_gen_err,
             lcsf_mode: mode,
             fn_send: send_cb,
             prot_desc_map: HashMap::from([(err_prot_id, &LCSF_EP_PROT_DESC as &LcsfProtDesc)]),
@@ -125,7 +125,7 @@ impl LcsfCore {
         // Dispatch command
         let prot_cb = self.prot_cb_map.get(&prot_id).unwrap();
         prot_cb(valid_msg);
-        return true;
+        true
     }
 
     /// Send an outgoing valid command
@@ -138,7 +138,7 @@ impl LcsfCore {
             prot_desc.cmd_desc_arr.iter().cloned().collect();
         let cmd_desc = cmd_desc_map.get(&valid_cmd.cmd_id).unwrap();
 
-        let raw_msg = lcsf_validator::encode_valid(prot_id, &cmd_desc, &valid_cmd).unwrap();
+        let raw_msg = lcsf_validator::encode_valid(prot_id, cmd_desc, valid_cmd).unwrap();
         let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg);
         // Send buffer
         (self.fn_send)(buff);

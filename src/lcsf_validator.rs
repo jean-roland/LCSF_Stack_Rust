@@ -84,12 +84,12 @@ pub enum LcsfValidateErrorEnum {
 fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     // Check data type
     match data_type {
-        LcsfDataType::Uint8 => return data_size == size_of::<u8>(),
-        LcsfDataType::Uint16 => return data_size == size_of::<u16>(),
-        LcsfDataType::Uint32 => return data_size == size_of::<u32>(),
-        LcsfDataType::ByteArray => return data_size > 0,
-        LcsfDataType::String => return data_size > 0,
-        _ => return false,
+        LcsfDataType::Uint8 => data_size == size_of::<u8>(),
+        LcsfDataType::Uint16 => data_size == size_of::<u16>(),
+        LcsfDataType::Uint32 => data_size == size_of::<u32>(),
+        LcsfDataType::ByteArray => data_size > 0,
+        LcsfDataType::String => data_size > 0,
+        _ => false,
     }
 }
 
@@ -168,7 +168,7 @@ fn validate_att_rec(
             }
         };
     }
-    return Ok((local_payload_size, valid_att));
+    Ok((local_payload_size, valid_att))
 }
 
 /// Validate a received lcsf raw message
@@ -204,7 +204,7 @@ pub fn validate_msg(
         let (_, valid_att) = validate_att_rec(*att_id, att_desc, &rx_msg.att_arr)?;
         valid_cmd.att_arr.push(valid_att);
     }
-    return Ok((valid_cmd, rx_msg.prot_id));
+    Ok((valid_cmd, rx_msg.prot_id))
 }
 
 // *** Encode valid ***
@@ -221,7 +221,7 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
     // Check sub-attribute type
     if data_type == LcsfDataType::Subattributes {
         if let LcsfValidAttPayload::SubattArr(subatt_arr) = &valid_att.payload {
-            if subatt_arr.len() == 0 {
+            if subatt_arr.is_empty() {
                 return None;
             }
             // Note data
@@ -249,12 +249,12 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
                     }
                 }
                 LcsfDataType::ByteArray => {
-                    if data.len() == 0 {
+                    if data.is_empty() {
                         return None;
                     }
                 }
                 LcsfDataType::String => {
-                    if data.len() == 0 {
+                    if data.is_empty() {
                         return None;
                     }
                 }
@@ -265,7 +265,7 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
             raw_att.payload = LcsfRawAttPayload::Data(data.clone());
         };
     }
-    return Some(raw_att);
+    Some(raw_att)
 }
 
 /// Fill recursively a raw attribute from a valid attribute following a descriptor
@@ -286,7 +286,7 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
                 return None;
             }
             // Check missing attribute
-            if valid_subatt_arr.len() == 0 {
+            if valid_subatt_arr.is_empty() {
                 // Check if mandatory
                 if !att_desc.is_optional {
                     return None;
@@ -295,7 +295,7 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
                 }
             }
             // Fill raw att header
-            raw_att = fill_att_info(att_desc.data_type, &valid_att)?;
+            raw_att = fill_att_info(att_desc.data_type, valid_att)?;
             // Parse valid sub-attribute array
             for (idx, valid_subatt) in valid_subatt_arr.iter().enumerate() {
                 // Get sub-attribute description
@@ -308,7 +308,7 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
         };
     } else if let LcsfValidAttPayload::Data(data) = &valid_att.payload {
         // Check missing attribute
-        if data.len() == 0 {
+        if data.is_empty() {
             // Check if mandatory
             if !att_desc.is_optional {
                 return None;
@@ -317,9 +317,9 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
             }
         }
         // Fill raw att
-        raw_att = fill_att_info(att_desc.data_type, &valid_att)?;
+        raw_att = fill_att_info(att_desc.data_type, valid_att)?;
     };
-    return Some(raw_att);
+    Some(raw_att)
 }
 
 /// Encode a valid command and its descriptor into a lcsf raw message
@@ -333,7 +333,7 @@ pub fn encode_valid(
 ) -> Option<LcsfRawMsg> {
     // Init raw message
     let mut raw_msg = LcsfRawMsg {
-        prot_id: prot_id,
+        prot_id,
         cmd_id: valid_cmd.cmd_id,
         att_nb: valid_cmd.att_arr.len() as u16,
         att_arr: Vec::new(),
@@ -349,7 +349,7 @@ pub fn encode_valid(
             .att_arr
             .push((*att_id, fill_att_rec(att_desc, valid_att)?));
     }
-    return Some(raw_msg);
+    Some(raw_msg)
 }
 
 // *** Tests ***

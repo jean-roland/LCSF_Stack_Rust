@@ -80,7 +80,7 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
         // Byte 6: Attribute Number MSB
         msg.att_nb += (*buff_iter.next()? as u16) << 8;
     }
-    return Some(msg);
+    Some(msg)
 }
 
 /// Fetch an lcsf_att_header struct from a buffer iterator
@@ -116,7 +116,7 @@ fn fetch_att_header(
         // Byte 4: Payload size MSB
         att.payload_size += (*buff_iter.next()? as u16) << 8;
     }
-    return Some((att_id, att));
+    Some((att_id, att))
 }
 
 /// Decode recursively the lcsf attributes from a buffer iterator
@@ -153,7 +153,7 @@ fn decode_att_rec(
         // Store data
         att.payload = LcsfRawAttPayload::Data(data);
     }
-    return Ok((att_id, att));
+    Ok((att_id, att))
 }
 
 /// Decode a buffer into a LcsfRawMsg
@@ -179,10 +179,10 @@ pub fn decode_buff(
         dec_msg.att_arr.push((new_id, new_att));
     }
     // Unused leftover data
-    if !buff_iter.next().is_none() {
+    if buff_iter.next().is_some() {
         return Err(LcsfDecodeErrorEnum::FormatErr);
     }
-    return Ok(dec_msg);
+    Ok(dec_msg)
 }
 
 // *** Encoder ***
@@ -215,7 +215,7 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
         // Byte 6: Attribute number MSB
         buffer.push((msg.att_nb >> 8) as u8);
     }
-    return buffer;
+    buffer
 }
 
 /// Encode a lcsf attribute header into a buffer
@@ -253,7 +253,7 @@ fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Ve
         // Byte 4: Attribute data size or sub-attribute number MSB
         buffer.push((att.payload_size >> 8) as u8);
     }
-    return buffer;
+    buffer
 }
 
 /// Recursively encode a LcsfRawAtt array into a buffer
@@ -280,7 +280,7 @@ fn encode_att_rec(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec
             }
         }
     }
-    return buffer;
+    buffer
 }
 
 /// Encode a LcsfRawMsg into a buffer
@@ -296,7 +296,7 @@ pub fn encode_buff(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
     for (id, att) in &msg.att_arr {
         buffer.extend(encode_att_rec(lcsf_mode, *id, att));
     }
-    return buffer;
+    buffer
 }
 
 // Tests
