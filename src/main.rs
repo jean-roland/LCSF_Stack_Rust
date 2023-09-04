@@ -47,6 +47,13 @@ fn example_process(cmd:LcsfValidCmd){
     };
 }
 
+// Custom function called when an lcsf error message is received
+#[allow(dead_code)]
+fn example_err_cb(cmd:LcsfValidCmd){
+    let (loc_str, type_str) = lcsf_error::process_error(cmd);
+    println!("Custom function received error, location: {loc_str}, type: {type_str}");
+}
+
 // Function called when protocol sends a message
 fn example_send(buff:Vec<u8>) {
     println!("Buffer to send: {buff:?}");
@@ -77,6 +84,8 @@ fn main() {
     // Send command
     println!("Input command: {example_valid_cmd:?}");
     lcsf_core.send_cmd(0xab, &example_valid_cmd);
+    // Update err callback (optional, only if you want to handle error message)
+    // lcsf_core.update_err_cb(example_err_cb);
     // Receive error
     println!("Input error: {err_buff:?}");
     lcsf_core.receive_buff(&err_buff);

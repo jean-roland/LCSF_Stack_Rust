@@ -35,7 +35,7 @@ pub struct LcsfCore {
 /// \param valid_cmd validated error command
 fn def_process_error(valid_cmd:LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(valid_cmd);
-    println!("Received error, location: {loc_str}, type: {type_str}");
+    println!("[lcsf_core]: Received error, location: {loc_str}, type: {type_str}");
 }
 
 impl LcsfCore {
@@ -59,6 +59,7 @@ impl LcsfCore {
 
     /// Change the error processing callback
     /// \param new_err_cb new error callback
+    #[allow(dead_code)]
     pub fn update_err_cb(&mut self, new_err_cb:ProtCallback) {
         let err_prot_id = match self.lcsf_mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
