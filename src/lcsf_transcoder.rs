@@ -5,7 +5,6 @@
 /// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
-// Imports
 use core::slice::Iter;
 
 /// Lcsf representation mode enum
@@ -84,21 +83,6 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
     return Some(msg);
 }
 
-#[test]
-fn test_fetch_msg_header() {
-    let mut msg = (*TEST_RAW_MSG).clone();
-    msg.att_arr.clear();
-
-    // Test error
-    assert_eq!(None, fetch_msg_header(LcsfModeEnum::Small, &mut [].iter()));
-    // Test small
-    let mut new_msg = fetch_msg_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL.iter()).unwrap();
-    assert_eq!(new_msg, msg);
-    // Test normal
-    new_msg = fetch_msg_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL.iter()).unwrap();
-    assert_eq!(new_msg, msg);
-}
-
 /// Fetch an lcsf_att_header struct from a buffer iterator
 /// \param lcsf_mode parsing mode to use
 /// \param buff_iter reference to the buffer iterator
@@ -133,25 +117,6 @@ fn fetch_att_header(
         att.payload_size += (*buff_iter.next()? as u16) << 8;
     }
     return Some((att_id, att));
-}
-
-#[test]
-fn test_fetch_att_header() {
-    let (att_id, mut att) = TEST_RAW_MSG.att_arr[0].clone();
-    att.payload = LcsfRawAttPayload::Data(Vec::new());
-
-    // Test error
-    assert_eq!(None, fetch_att_header(LcsfModeEnum::Small, &mut [].iter()));
-    // Test small
-    let (mut new_id, mut new_att) =
-        fetch_att_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL[3..].iter()).unwrap();
-    assert_eq!(new_att, att);
-    assert_eq!(new_id, att_id);
-    // Test normal
-    (new_id, new_att) =
-        fetch_att_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL[6..].iter()).unwrap();
-    assert_eq!(new_att, att);
-    assert_eq!(new_id, att_id);
 }
 
 /// Decode recursively the lcsf attributes from a buffer iterator
@@ -191,39 +156,6 @@ fn decode_att_rec(
     return Ok((att_id, att));
 }
 
-#[test]
-fn test_decode_att_rec() {
-    // Test error
-    match decode_att_rec(LcsfModeEnum::Small, &mut [].iter()) {
-        Ok(_) => panic!("decode_att_rec should fail"),
-        Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
-    }
-    // Test small
-    let data_iter = &mut RX_MSG_SMALL[3..].iter();
-    for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
-        let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
-        match decode_att_rec(LcsfModeEnum::Small, data_iter) {
-            Ok((new_id, new_att)) => {
-                assert_eq!(new_att, *att);
-                assert_eq!(new_id, *id);
-            }
-            Err(err) => panic!("decode_att_rec failed with error: {err:?} but should not fail"),
-        }
-    }
-    // Test normal
-    let data_iter = &mut RX_MSG_NORMAL[6..].iter();
-    for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
-        let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
-        match decode_att_rec(LcsfModeEnum::Normal, data_iter) {
-            Ok((new_id, new_att)) => {
-                assert_eq!(new_att, *att);
-                assert_eq!(new_id, *id);
-            }
-            Err(err) => panic!("decode_att_rec failed with error: {err:?} but should not fail"),
-        }
-    }
-}
-
 /// Decode a buffer into a LcsfRawMsg
 ///
 /// \param lcsf_mode parsing mode to use
@@ -251,25 +183,6 @@ pub fn decode_buff(
         return Err(LcsfDecodeErrorEnum::FormatErr);
     }
     return Ok(dec_msg);
-}
-
-#[test]
-fn test_decode_buff() {
-    // Test error
-    match decode_buff(LcsfModeEnum::Small, BAD_FORMAT_MSG) {
-        Ok(_) => panic!("decode_buff should fail"),
-        Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
-    }
-    // Test small
-    match decode_buff(LcsfModeEnum::Small, RX_MSG_SMALL) {
-        Ok(new_msg) => assert_eq!(new_msg, *TEST_RAW_MSG),
-        Err(err) => panic!("decode_buff failed with error: {err:?} but should not fail"),
-    }
-    // Test normal
-    match decode_buff(LcsfModeEnum::Normal, RX_MSG_NORMAL) {
-        Ok(new_msg) => assert_eq!(new_msg, *TEST_RAW_MSG),
-        Err(err) => panic!("decode_buff failed with error: {err:?} but should not fail"),
-    }
 }
 
 // *** Encoder ***
@@ -303,20 +216,6 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
         buffer.push((msg.att_nb >> 8) as u8);
     }
     return buffer;
-}
-
-#[test]
-fn test_fill_msg_header() {
-    // Test small
-    assert_eq!(
-        fill_msg_header(LcsfModeEnum::Small, &TEST_RAW_MSG),
-        vec![0xab, 0x12, 0x03]
-    );
-    // Test normal
-    assert_eq!(
-        fill_msg_header(LcsfModeEnum::Normal, &TEST_RAW_MSG),
-        vec![0xab, 0x00, 0x12, 0x00, 0x03, 0x00]
-    );
 }
 
 /// Encode a lcsf attribute header into a buffer
@@ -357,44 +256,6 @@ fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Ve
     return buffer;
 }
 
-#[test]
-fn test_fill_att_header() {
-    // Test small
-    assert_eq!(
-        fill_att_header(
-            LcsfModeEnum::Small,
-            TEST_RAW_MSG.att_arr[0].0,
-            &TEST_RAW_MSG.att_arr[0].1
-        ),
-        vec![0x55, 0x05]
-    );
-    assert_eq!(
-        fill_att_header(
-            LcsfModeEnum::Small,
-            TEST_RAW_MSG.att_arr[1].0,
-            &TEST_RAW_MSG.att_arr[1].1
-        ),
-        vec![0xff, 0x02]
-    );
-    // Test normal
-    assert_eq!(
-        fill_att_header(
-            LcsfModeEnum::Normal,
-            TEST_RAW_MSG.att_arr[0].0,
-            &TEST_RAW_MSG.att_arr[0].1
-        ),
-        vec![0x55, 0x00, 0x05, 0x00]
-    );
-    assert_eq!(
-        fill_att_header(
-            LcsfModeEnum::Normal,
-            TEST_RAW_MSG.att_arr[1].0,
-            &TEST_RAW_MSG.att_arr[1].1
-        ),
-        vec![0x7f, 0x80, 0x02, 0x00]
-    );
-}
-
 /// Recursively encode a LcsfRawAtt array into a buffer
 ///
 /// \param lcsf_mode parsing mode to use
@@ -422,28 +283,6 @@ fn encode_att_rec(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec
     return buffer;
 }
 
-#[test]
-fn test_encode_att_rec() {
-    // Test small
-    assert_eq!(
-        encode_att_rec(
-            LcsfModeEnum::Small,
-            TEST_RAW_MSG.att_arr[1].0,
-            &TEST_RAW_MSG.att_arr[1].1
-        ),
-        RX_MSG_SMALL[10..32]
-    );
-    // Test normal
-    assert_eq!(
-        encode_att_rec(
-            LcsfModeEnum::Normal,
-            TEST_RAW_MSG.att_arr[1].0,
-            &TEST_RAW_MSG.att_arr[1].1
-        ),
-        RX_MSG_NORMAL[15..45]
-    );
-}
-
 /// Encode a LcsfRawMsg into a buffer
 ///
 /// \param lcsf_mode parsing mode to use
@@ -460,100 +299,260 @@ pub fn encode_buff(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
     return buffer;
 }
 
-#[test]
-fn test_encode_buff() {
-    // Test small
-    assert_eq!(
-        encode_buff(LcsfModeEnum::Small, &TEST_RAW_MSG),
-        RX_MSG_SMALL
-    );
-    // Test normal
-    assert_eq!(
-        encode_buff(LcsfModeEnum::Normal, &TEST_RAW_MSG),
-        RX_MSG_NORMAL
-    );
-}
-
-// Test data
+// Tests
 #[cfg(test)]
-use lazy_static::lazy_static;
+mod tests {
+    use super::*;
+    use lazy_static::lazy_static;
 
-#[cfg(test)]
-const BAD_FORMAT_MSG: &'static [u8] = &[0xaa, 0x01, 0x0a];
+    #[test]
+    fn test_fetch_msg_header() {
+        let mut msg = (*TEST_RAW_MSG).clone();
+        msg.att_arr.clear();
 
-#[cfg(test)]
-const RX_MSG_SMALL: &'static [u8] = &[
-    0xab, 0x12, 0x03, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0xff, 0x02, 0x30, 0x01, 0x0a, 0xb1,
-    0x01, 0x32, 0x0d, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69, 0x63, 0x00,
-    0x40, 0x02, 0xab, 0xcd,
-];
+        // Test error
+        assert_eq!(None, fetch_msg_header(LcsfModeEnum::Small, &mut [].iter()));
+        // Test small
+        let mut new_msg = fetch_msg_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL.iter()).unwrap();
+        assert_eq!(new_msg, msg);
+        // Test normal
+        new_msg = fetch_msg_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL.iter()).unwrap();
+        assert_eq!(new_msg, msg);
+    }
 
-#[cfg(test)]
-const RX_MSG_NORMAL: &'static [u8] = &[
-    0xab, 0x00, 0x12, 0x00, 0x03, 0x00, 0x55, 0x00, 0x05, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x7f,
-    0x80, 0x02, 0x00, 0x30, 0x00, 0x01, 0x00, 0x0a, 0x31, 0x80, 0x01, 0x00, 0x32, 0x00, 0x0d, 0x00,
-    0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69, 0x63, 0x00, 0x40, 0x00, 0x02,
-    0x00, 0xab, 0xcd,
-];
+    #[test]
+    fn test_fetch_att_header() {
+        let (att_id, mut att) = TEST_RAW_MSG.att_arr[0].clone();
+        att.payload = LcsfRawAttPayload::Data(Vec::new());
 
-#[cfg(test)]
-lazy_static! {
-    pub static ref TEST_RAW_MSG: LcsfRawMsg = LcsfRawMsg {
-        prot_id: 0xab,
-        cmd_id: 0x12,
-        att_nb: 3,
-        att_arr: vec![
-            (
-                0x55,
-                LcsfRawAtt {
-                    has_subatt: false,
-                    payload_size: 5,
-                    payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04]),
+        // Test error
+        assert_eq!(None, fetch_att_header(LcsfModeEnum::Small, &mut [].iter()));
+        // Test small
+        let (mut new_id, mut new_att) =
+            fetch_att_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL[3..].iter()).unwrap();
+        assert_eq!(new_att, att);
+        assert_eq!(new_id, att_id);
+        // Test normal
+        (new_id, new_att) =
+            fetch_att_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL[6..].iter()).unwrap();
+        assert_eq!(new_att, att);
+        assert_eq!(new_id, att_id);
+    }
+
+    #[test]
+    fn test_decode_att_rec() {
+        // Test error
+        match decode_att_rec(LcsfModeEnum::Small, &mut [].iter()) {
+            Ok(_) => panic!("decode_att_rec should fail"),
+            Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
+        }
+        // Test small
+        let data_iter = &mut RX_MSG_SMALL[3..].iter();
+        for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
+            let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
+            match decode_att_rec(LcsfModeEnum::Small, data_iter) {
+                Ok((new_id, new_att)) => {
+                    assert_eq!(new_att, *att);
+                    assert_eq!(new_id, *id);
                 }
-            ),
-            (
-                0x7f,
-                LcsfRawAtt {
-                    has_subatt: true,
-                    payload_size: 2,
-                    payload: LcsfRawAttPayload::SubattArr(vec![
-                        (
-                            0x30,
-                            LcsfRawAtt {
-                                has_subatt: false,
-                                payload_size: 1,
-                                payload: LcsfRawAttPayload::Data(vec![0xa]),
-                            }
-                        ),
-                        (
-                            0x31,
-                            LcsfRawAtt {
-                                has_subatt: true,
-                                payload_size: 1,
-                                payload: LcsfRawAttPayload::SubattArr(vec![(
-                                    0x32,
-                                    LcsfRawAtt {
-                                        has_subatt: false,
-                                        payload_size: 13,
-                                        payload: LcsfRawAttPayload::Data(vec![
-                                            0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70,
-                                            0x74, 0x69, 0x63, 0x00,
-                                        ]),
-                                    }
-                                ),])
-                            }
-                        ),
-                    ])
+                Err(err) => panic!("decode_att_rec failed with error: {err:?} but should not fail"),
+            }
+        }
+        // Test normal
+        let data_iter = &mut RX_MSG_NORMAL[6..].iter();
+        for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
+            let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
+            match decode_att_rec(LcsfModeEnum::Normal, data_iter) {
+                Ok((new_id, new_att)) => {
+                    assert_eq!(new_att, *att);
+                    assert_eq!(new_id, *id);
                 }
+                Err(err) => panic!("decode_att_rec failed with error: {err:?} but should not fail"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_decode_buff() {
+        // Test error
+        match decode_buff(LcsfModeEnum::Small, BAD_FORMAT_MSG) {
+            Ok(_) => panic!("decode_buff should fail"),
+            Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
+        }
+        // Test small
+        match decode_buff(LcsfModeEnum::Small, RX_MSG_SMALL) {
+            Ok(new_msg) => assert_eq!(new_msg, *TEST_RAW_MSG),
+            Err(err) => panic!("decode_buff failed with error: {err:?} but should not fail"),
+        }
+        // Test normal
+        match decode_buff(LcsfModeEnum::Normal, RX_MSG_NORMAL) {
+            Ok(new_msg) => assert_eq!(new_msg, *TEST_RAW_MSG),
+            Err(err) => panic!("decode_buff failed with error: {err:?} but should not fail"),
+        }
+    }
+
+    #[test]
+    fn test_fill_msg_header() {
+        // Test small
+        assert_eq!(
+            fill_msg_header(LcsfModeEnum::Small, &TEST_RAW_MSG),
+            vec![0xab, 0x12, 0x03]
+        );
+        // Test normal
+        assert_eq!(
+            fill_msg_header(LcsfModeEnum::Normal, &TEST_RAW_MSG),
+            vec![0xab, 0x00, 0x12, 0x00, 0x03, 0x00]
+        );
+    }
+
+    #[test]
+    fn test_fill_att_header() {
+        // Test small
+        assert_eq!(
+            fill_att_header(
+                LcsfModeEnum::Small,
+                TEST_RAW_MSG.att_arr[0].0,
+                &TEST_RAW_MSG.att_arr[0].1
             ),
-            (
-                0x40,
-                LcsfRawAtt {
-                    has_subatt: false,
-                    payload_size: 2,
-                    payload: LcsfRawAttPayload::Data(vec![0xab, 0xcd]),
-                }
+            vec![0x55, 0x05]
+        );
+        assert_eq!(
+            fill_att_header(
+                LcsfModeEnum::Small,
+                TEST_RAW_MSG.att_arr[1].0,
+                &TEST_RAW_MSG.att_arr[1].1
             ),
-        ],
-    };
+            vec![0xff, 0x02]
+        );
+        // Test normal
+        assert_eq!(
+            fill_att_header(
+                LcsfModeEnum::Normal,
+                TEST_RAW_MSG.att_arr[0].0,
+                &TEST_RAW_MSG.att_arr[0].1
+            ),
+            vec![0x55, 0x00, 0x05, 0x00]
+        );
+        assert_eq!(
+            fill_att_header(
+                LcsfModeEnum::Normal,
+                TEST_RAW_MSG.att_arr[1].0,
+                &TEST_RAW_MSG.att_arr[1].1
+            ),
+            vec![0x7f, 0x80, 0x02, 0x00]
+        );
+    }
+
+    #[test]
+    fn test_encode_att_rec() {
+        // Test small
+        assert_eq!(
+            encode_att_rec(
+                LcsfModeEnum::Small,
+                TEST_RAW_MSG.att_arr[1].0,
+                &TEST_RAW_MSG.att_arr[1].1
+            ),
+            RX_MSG_SMALL[10..32]
+        );
+        // Test normal
+        assert_eq!(
+            encode_att_rec(
+                LcsfModeEnum::Normal,
+                TEST_RAW_MSG.att_arr[1].0,
+                &TEST_RAW_MSG.att_arr[1].1
+            ),
+            RX_MSG_NORMAL[15..45]
+        );
+    }
+
+    #[test]
+    fn test_encode_buff() {
+        // Test small
+        assert_eq!(
+            encode_buff(LcsfModeEnum::Small, &TEST_RAW_MSG),
+            RX_MSG_SMALL
+        );
+        // Test normal
+        assert_eq!(
+            encode_buff(LcsfModeEnum::Normal, &TEST_RAW_MSG),
+            RX_MSG_NORMAL
+        );
+    }
+
+    // Test data
+    const BAD_FORMAT_MSG: &'static [u8] = &[0xaa, 0x01, 0x0a];
+
+    const RX_MSG_SMALL: &'static [u8] = &[
+        0xab, 0x12, 0x03, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0xff, 0x02, 0x30, 0x01, 0x0a,
+        0xb1, 0x01, 0x32, 0x0d, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69,
+        0x63, 0x00, 0x40, 0x02, 0xab, 0xcd,
+    ];
+
+    const RX_MSG_NORMAL: &'static [u8] = &[
+        0xab, 0x00, 0x12, 0x00, 0x03, 0x00, 0x55, 0x00, 0x05, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
+        0x7f, 0x80, 0x02, 0x00, 0x30, 0x00, 0x01, 0x00, 0x0a, 0x31, 0x80, 0x01, 0x00, 0x32, 0x00,
+        0x0d, 0x00, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69, 0x63, 0x00,
+        0x40, 0x00, 0x02, 0x00, 0xab, 0xcd,
+    ];
+
+    lazy_static! {
+        static ref TEST_RAW_MSG: LcsfRawMsg = LcsfRawMsg {
+            prot_id: 0xab,
+            cmd_id: 0x12,
+            att_nb: 3,
+            att_arr: vec![
+                (
+                    0x55,
+                    LcsfRawAtt {
+                        has_subatt: false,
+                        payload_size: 5,
+                        payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04]),
+                    }
+                ),
+                (
+                    0x7f,
+                    LcsfRawAtt {
+                        has_subatt: true,
+                        payload_size: 2,
+                        payload: LcsfRawAttPayload::SubattArr(vec![
+                            (
+                                0x30,
+                                LcsfRawAtt {
+                                    has_subatt: false,
+                                    payload_size: 1,
+                                    payload: LcsfRawAttPayload::Data(vec![0xa]),
+                                }
+                            ),
+                            (
+                                0x31,
+                                LcsfRawAtt {
+                                    has_subatt: true,
+                                    payload_size: 1,
+                                    payload: LcsfRawAttPayload::SubattArr(vec![(
+                                        0x32,
+                                        LcsfRawAtt {
+                                            has_subatt: false,
+                                            payload_size: 13,
+                                            payload: LcsfRawAttPayload::Data(vec![
+                                                0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65,
+                                                0x70, 0x74, 0x69, 0x63, 0x00,
+                                            ]),
+                                        }
+                                    ),])
+                                }
+                            ),
+                        ])
+                    }
+                ),
+                (
+                    0x40,
+                    LcsfRawAtt {
+                        has_subatt: false,
+                        payload_size: 2,
+                        payload: LcsfRawAttPayload::Data(vec![0xab, 0xcd]),
+                    }
+                ),
+            ],
+        };
+    }
 }

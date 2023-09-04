@@ -5,7 +5,6 @@
 /// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
-// Imports
 use std::collections::HashMap;
 
 use crate::lcsf_error;
