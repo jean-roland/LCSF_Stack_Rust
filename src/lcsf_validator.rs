@@ -5,15 +5,14 @@
 /// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
-
 // Imports
 use core::mem::size_of;
 use std::collections::HashMap;
 
 use crate::lcsf_transcoder;
-use lcsf_transcoder::LcsfRawMsg;
 use lcsf_transcoder::LcsfRawAtt;
 use lcsf_transcoder::LcsfRawAttPayload;
+use lcsf_transcoder::LcsfRawMsg;
 
 // Data type enum
 #[allow(dead_code)]
@@ -30,21 +29,21 @@ pub enum LcsfDataType {
 // Lcsf attribute descriptor structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfAttDesc {
-    pub is_optional:bool, // Indicates if attribute optional
-    pub data_type:LcsfDataType,
-    pub subatt_desc_arr:Vec<(u16, LcsfAttDesc)>,
+    pub is_optional: bool, // Indicates if attribute optional
+    pub data_type: LcsfDataType,
+    pub subatt_desc_arr: Vec<(u16, LcsfAttDesc)>,
 }
 
 // Lcsf command descriptor structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfCmdDesc {
-    pub att_desc_arr:Vec<(u16, LcsfAttDesc)>,
+    pub att_desc_arr: Vec<(u16, LcsfAttDesc)>,
 }
 
 // Lcsf protocol descriptor structure */
 #[derive(Debug, PartialEq)]
 pub struct LcsfProtDesc {
-    pub cmd_desc_arr:Vec<(u16, LcsfCmdDesc)>,
+    pub cmd_desc_arr: Vec<(u16, LcsfCmdDesc)>,
 }
 
 // Lcsf valid attribute payload union
@@ -57,23 +56,23 @@ pub enum LcsfValidAttPayload {
 // Lcsf valid attribute structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfValidAtt {
-    pub payload:LcsfValidAttPayload,
+    pub payload: LcsfValidAttPayload,
 }
 
 // Lcsf valid command structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfValidCmd {
-    pub cmd_id:u16,
-    pub att_arr:Vec<LcsfValidAtt>,
+    pub cmd_id: u16,
+    pub att_arr: Vec<LcsfValidAtt>,
 }
 
 /// Lcsf decoding error enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfValidateErrorEnum {
-    UnknownProtId = 0x00, // Unknown protocol id
-    UnknownCmdId = 0x01, // Unknown command id
-    UnknownAttId = 0x02, // Unknown attribute id
-    TooManyAtt = 0x03, // Too many attributes received
+    UnknownProtId = 0x00,    // Unknown protocol id
+    UnknownCmdId = 0x01,     // Unknown command id
+    UnknownAttId = 0x02,     // Unknown attribute id
+    TooManyAtt = 0x03,       // Too many attributes received
     MissMandatoryAtt = 0x04, // Missing mandatory attribute
     WrongAttDataType = 0x05, // Wrong attribute data type
 }
@@ -83,7 +82,7 @@ pub enum LcsfValidateErrorEnum {
 /// Validate the data size of received attribute payload
 /// \param data_size size of the data
 /// \param data_type type of the data
-fn validate_data_type(data_size:usize, data_type:LcsfDataType) -> bool {
+fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     // Check data type
     match data_type {
         LcsfDataType::Uint8 => return data_size == size_of::<u8>(),
@@ -99,12 +98,15 @@ fn validate_data_type(data_size:usize, data_type:LcsfDataType) -> bool {
 /// \param att_id attribute id value
 /// \param att_desc attribute descriptor reference
 /// \param rx_att_arr received (id, attribute) array reference
-fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRawAtt)])
-    -> Result<(usize, LcsfValidAtt), LcsfValidateErrorEnum> {
+fn validate_att_rec(
+    att_id: u16,
+    att_desc: &LcsfAttDesc,
+    rx_att_arr: &[(u16, LcsfRawAtt)],
+) -> Result<(usize, LcsfValidAtt), LcsfValidateErrorEnum> {
     let mut valid_att = LcsfValidAtt {
         payload: LcsfValidAttPayload::Data(Vec::new()),
     };
-    let mut local_payload_size:usize = 0; // To avoid de-structuring to get vec.len()
+    let mut local_payload_size: usize = 0; // To avoid de-structuring to get vec.len()
 
     // Check for attribute in received array
     let rx_att_map: HashMap<u16, LcsfRawAtt> = rx_att_arr.iter().cloned().collect();
@@ -116,7 +118,7 @@ fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRa
             } else {
                 return Ok((local_payload_size, valid_att));
             }
-        },
+        }
         Some(att) => att,
     };
     // Attribute present, check payload type
@@ -128,7 +130,7 @@ fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRa
         // Payload de-structuring
         if let LcsfRawAttPayload::SubattArr(rx_subatt_arr) = &rx_att.payload {
             valid_att.payload = LcsfValidAttPayload::SubattArr(Vec::new());
-            let mut subatt_count:usize = 0;
+            let mut subatt_count: usize = 0;
 
             // Too many attributes case
             if rx_subatt_arr.len() > att_desc.subatt_desc_arr.len() {
@@ -137,7 +139,8 @@ fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRa
             // Parse through the sub-descriptor list
             for (sub_id, sub_desc) in &att_desc.subatt_desc_arr {
                 // Process attribute
-                let (sub_payload_size, valid_subatt) = validate_att_rec(*sub_id, sub_desc, rx_subatt_arr)?;
+                let (sub_payload_size, valid_subatt) =
+                    validate_att_rec(*sub_id, sub_desc, rx_subatt_arr)?;
                 // Count sub-attribute presence
                 if sub_payload_size > 0 {
                     subatt_count += 1;
@@ -171,27 +174,39 @@ fn validate_att_rec(att_id:u16, att_desc:&LcsfAttDesc, rx_att_arr:&[(u16, LcsfRa
 
 #[test]
 fn test_validate_att_rec() {
-    let bad_att1 = vec![(0x40, LcsfRawAtt {
-        has_subatt: false,
-        payload_size: 1,
-        payload: LcsfRawAttPayload::Data(vec![0x00])
-    })];
-    let mut bad_att2 = vec![(0x31, LcsfRawAtt {
-        has_subatt: false,
-        payload_size: 2,
-        payload: LcsfRawAttPayload::SubattArr(vec![
-            (0x55, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 1,
-                payload: LcsfRawAttPayload::Data(vec![0x00])
-            }),
-            (0x55, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 1,
-                payload: LcsfRawAttPayload::Data(vec![0x00])
-            }),
-        ]),
-    })];
+    let bad_att1 = vec![(
+        0x40,
+        LcsfRawAtt {
+            has_subatt: false,
+            payload_size: 1,
+            payload: LcsfRawAttPayload::Data(vec![0x00]),
+        },
+    )];
+    let mut bad_att2 = vec![(
+        0x31,
+        LcsfRawAtt {
+            has_subatt: false,
+            payload_size: 2,
+            payload: LcsfRawAttPayload::SubattArr(vec![
+                (
+                    0x55,
+                    LcsfRawAtt {
+                        has_subatt: false,
+                        payload_size: 1,
+                        payload: LcsfRawAttPayload::Data(vec![0x00]),
+                    },
+                ),
+                (
+                    0x55,
+                    LcsfRawAtt {
+                        has_subatt: false,
+                        payload_size: 1,
+                        payload: LcsfRawAttPayload::Data(vec![0x00]),
+                    },
+                ),
+            ]),
+        },
+    )];
     let att_desc_arr = &TEST_PROT_DESC.cmd_desc_arr[0].1.att_desc_arr;
 
     // Test error
@@ -231,8 +246,10 @@ fn test_validate_att_rec() {
 /// Validate a received lcsf raw message
 /// \param prot_desc_map (protocol id, protocol descriptor) hash map reference
 /// \param rx_msg received message reference
-pub fn validate_msg(prot_desc_map:&HashMap<u16, &LcsfProtDesc>, rx_msg:&LcsfRawMsg)
-    -> Result<(LcsfValidCmd, u16), LcsfValidateErrorEnum> {
+pub fn validate_msg(
+    prot_desc_map: &HashMap<u16, &LcsfProtDesc>,
+    rx_msg: &LcsfRawMsg,
+) -> Result<(LcsfValidCmd, u16), LcsfValidateErrorEnum> {
     let mut valid_cmd = LcsfValidCmd {
         cmd_id: 0,
         att_arr: Vec::new(),
@@ -243,7 +260,7 @@ pub fn validate_msg(prot_desc_map:&HashMap<u16, &LcsfProtDesc>, rx_msg:&LcsfRawM
         Some(desc) => desc,
     };
     // Check command id valid
-    let cmd_desc_map:HashMap<u16, LcsfCmdDesc> = prot_desc.cmd_desc_arr.iter().cloned().collect();
+    let cmd_desc_map: HashMap<u16, LcsfCmdDesc> = prot_desc.cmd_desc_arr.iter().cloned().collect();
     let cmd_desc = match cmd_desc_map.get(&rx_msg.cmd_id) {
         None => return Err(LcsfValidateErrorEnum::UnknownCmdId),
         Some(desc) => desc,
@@ -265,33 +282,45 @@ pub fn validate_msg(prot_desc_map:&HashMap<u16, &LcsfProtDesc>, rx_msg:&LcsfRawM
 #[test]
 fn test_validate_msg() {
     // Test data
-    let prot_desc_map:HashMap<u16, &LcsfProtDesc> =
+    let prot_desc_map: HashMap<u16, &LcsfProtDesc> =
         HashMap::from([(0xab as u16, &TEST_PROT_DESC as &LcsfProtDesc)]);
     let mut bad_msg = LcsfRawMsg {
         prot_id: 0,
         cmd_id: 0,
         att_nb: 4,
         att_arr: vec![
-            (0x01, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 0,
-                payload: LcsfRawAttPayload::Data(Vec::new()),
-            }),
-            (0x02, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 0,
-                payload: LcsfRawAttPayload::Data(Vec::new()),
-            }),
-            (0x03, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 0,
-                payload: LcsfRawAttPayload::Data(Vec::new()),
-            }),
-            (0x04, LcsfRawAtt {
-                has_subatt: false,
-                payload_size: 0,
-                payload: LcsfRawAttPayload::Data(Vec::new()),
-            }),
+            (
+                0x01,
+                LcsfRawAtt {
+                    has_subatt: false,
+                    payload_size: 0,
+                    payload: LcsfRawAttPayload::Data(Vec::new()),
+                },
+            ),
+            (
+                0x02,
+                LcsfRawAtt {
+                    has_subatt: false,
+                    payload_size: 0,
+                    payload: LcsfRawAttPayload::Data(Vec::new()),
+                },
+            ),
+            (
+                0x03,
+                LcsfRawAtt {
+                    has_subatt: false,
+                    payload_size: 0,
+                    payload: LcsfRawAttPayload::Data(Vec::new()),
+                },
+            ),
+            (
+                0x04,
+                LcsfRawAtt {
+                    has_subatt: false,
+                    payload_size: 0,
+                    payload: LcsfRawAttPayload::Data(Vec::new()),
+                },
+            ),
         ],
     };
     // Test error
@@ -315,7 +344,7 @@ fn test_validate_msg() {
         Ok((valid_cmd, id)) => {
             assert_eq!(valid_cmd, *TEST_VALID_CMD);
             assert_eq!(id, 0xab);
-        },
+        }
     }
 }
 
@@ -324,7 +353,7 @@ fn test_validate_msg() {
 /// Fill a raw attribute info from a valid attribute
 /// \param data_type attribute data type from descriptor
 /// \param valid_att valid attribute reference
-fn fill_att_info(data_type:LcsfDataType, valid_att:&LcsfValidAtt) -> Option<LcsfRawAtt> {
+fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<LcsfRawAtt> {
     let mut raw_att = LcsfRawAtt {
         has_subatt: false,
         payload_size: 0,
@@ -349,27 +378,27 @@ fn fill_att_info(data_type:LcsfDataType, valid_att:&LcsfValidAtt) -> Option<Lcsf
                     if data.len() != std::mem::size_of::<u8>() {
                         return None;
                     }
-                },
+                }
                 LcsfDataType::Uint16 => {
                     if data.len() != std::mem::size_of::<u16>() {
                         return None;
                     }
-                },
+                }
                 LcsfDataType::Uint32 => {
                     if data.len() != std::mem::size_of::<u32>() {
                         return None;
                     }
-                },
+                }
                 LcsfDataType::ByteArray => {
                     if data.len() == 0 {
                         return None;
                     }
-                },
+                }
                 LcsfDataType::String => {
                     if data.len() == 0 {
                         return None;
                     }
-                },
+                }
                 _ => return None,
             }
             // Note data
@@ -416,11 +445,9 @@ fn test_fill_att_info() {
         payload: LcsfRawAttPayload::Data(vec![0x10, 0x20, 0x30, 0x40, 0x00]),
     };
     let valid_att_sub = LcsfValidAtt {
-        payload: LcsfValidAttPayload::SubattArr(vec![
-            LcsfValidAtt {
-               payload: LcsfValidAttPayload::Data(vec![0xff]),
-            },
-        ]),
+        payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0xff]),
+        }]),
     };
     let raw_att_sub = LcsfRawAtt {
         has_subatt: true,
@@ -433,12 +460,12 @@ fn test_fill_att_info() {
     // Test error
     match fill_att_info(LcsfDataType::Subattributes, &valid_att_err) {
         Some(_) => panic!("fill_att_info should fail"),
-        None => {},
+        None => {}
     }
     valid_att_err.payload = LcsfValidAttPayload::Data(Vec::new());
     match fill_att_info(LcsfDataType::Uint32, &valid_att_err) {
         Some(_) => panic!("fill_att_info should fail"),
-        None => {},
+        None => {}
     }
     // Test valid
     match fill_att_info(LcsfDataType::Uint8, &valid_att_u8) {
@@ -470,7 +497,7 @@ fn test_fill_att_info() {
 /// Fill recursively a raw attribute from a valid attribute following a descriptor
 /// \param att_desc attribute descriptor reference
 /// \param valid_att valid attribute reference
-fn fill_att_rec(att_desc:&LcsfAttDesc, valid_att:&LcsfValidAtt) -> Option<LcsfRawAtt> {
+fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<LcsfRawAtt> {
     // Init raw_att
     let mut raw_att = LcsfRawAtt {
         has_subatt: false,
@@ -505,21 +532,19 @@ fn fill_att_rec(att_desc:&LcsfAttDesc, valid_att:&LcsfValidAtt) -> Option<LcsfRa
                 };
             }
         };
-    } else {
-        if let LcsfValidAttPayload::Data(data) = &valid_att.payload {
-            // Check missing attribute
-            if data.len() == 0 {
-                // Check if mandatory
-                if !att_desc.is_optional {
-                    return None;
-                } else {
-                    return Some(raw_att);
-                }
+    } else if let LcsfValidAttPayload::Data(data) = &valid_att.payload {
+        // Check missing attribute
+        if data.len() == 0 {
+            // Check if mandatory
+            if !att_desc.is_optional {
+                return None;
+            } else {
+                return Some(raw_att);
             }
-            // Fill raw att
-            raw_att = fill_att_info(att_desc.data_type, &valid_att)?;
         }
-    }
+        // Fill raw att
+        raw_att = fill_att_info(att_desc.data_type, &valid_att)?;
+    };
     return Some(raw_att);
 }
 
@@ -542,7 +567,7 @@ fn test_fill_att_rec() {
     // Test error
     match fill_att_rec(&test_att_desc, &empty_valid_att) {
         Some(_) => panic!("fill_att_rec should fail"),
-        None => {},
+        None => {}
     }
     // Test valid
     test_att_desc.is_optional = true;
@@ -563,7 +588,11 @@ fn test_fill_att_rec() {
 /// \param prot_id protocol id
 /// \param cmd_desc command descriptor reference
 /// \param valid_cmd valid command reference
-pub fn encode_valid(prot_id:u16, cmd_desc:&LcsfCmdDesc, valid_cmd:&LcsfValidCmd) -> Option<LcsfRawMsg> {
+pub fn encode_valid(
+    prot_id: u16,
+    cmd_desc: &LcsfCmdDesc,
+    valid_cmd: &LcsfValidCmd,
+) -> Option<LcsfRawMsg> {
     // Init raw message
     let mut raw_msg = LcsfRawMsg {
         prot_id: prot_id,
@@ -578,7 +607,9 @@ pub fn encode_valid(prot_id:u16, cmd_desc:&LcsfCmdDesc, valid_cmd:&LcsfValidCmd)
     // Fill attribute array
     for (idx, valid_att) in valid_cmd.att_arr.iter().enumerate() {
         let (att_id, att_desc) = cmd_desc.att_desc_arr.get(idx)?;
-        raw_msg.att_arr.push((*att_id, fill_att_rec(att_desc, valid_att)?));
+        raw_msg
+            .att_arr
+            .push((*att_id, fill_att_rec(att_desc, valid_att)?));
     }
     return Some(raw_msg);
 }
@@ -593,7 +624,7 @@ pub fn test_encode_valid() {
     // Test error
     match encode_valid(0xab, &TEST_PROT_DESC.cmd_desc_arr[0].1, &bad_cmd) {
         Some(_) => panic!("fill_att_rec should fail"),
-        None => {},
+        None => {}
     }
     // Test valid
     match encode_valid(0xab, &TEST_PROT_DESC.cmd_desc_arr[0].1, &TEST_VALID_CMD) {
@@ -601,8 +632,6 @@ pub fn test_encode_valid() {
         Some(raw_msg) => assert_eq!(raw_msg, *TEST_RAW_MSG),
     }
 }
-
-
 
 // Test data
 #[cfg(test)]
@@ -612,48 +641,64 @@ use lcsf_transcoder::TEST_RAW_MSG;
 
 #[cfg(test)]
 lazy_static! {
-    static ref TEST_PROT_DESC:LcsfProtDesc = LcsfProtDesc {
-        cmd_desc_arr: vec![
-            (0x12, LcsfCmdDesc {
+    static ref TEST_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
+        cmd_desc_arr: vec![(
+            0x12,
+            LcsfCmdDesc {
                 att_desc_arr: vec![
-                    (0x55, LcsfAttDesc {
-                        is_optional: false,
-                        data_type: LcsfDataType::ByteArray,
-                        subatt_desc_arr: Vec::new(),
-                    }),
-                    (0x7f, LcsfAttDesc {
-                        is_optional: false,
-                        data_type: LcsfDataType::Subattributes,
-                        subatt_desc_arr: vec![
-                            (0x30, LcsfAttDesc {
-                                is_optional: false,
-                                data_type: LcsfDataType::Uint8,
-                                subatt_desc_arr: Vec::new(),
-                            }),
-                            (0x31, LcsfAttDesc {
-                                is_optional: false,
-                                data_type: LcsfDataType::Subattributes,
-                                subatt_desc_arr: vec![
-                                    (0x32, LcsfAttDesc {
-                                        is_optional: true,
-                                        data_type: LcsfDataType::String,
+                    (
+                        0x55,
+                        LcsfAttDesc {
+                            is_optional: false,
+                            data_type: LcsfDataType::ByteArray,
+                            subatt_desc_arr: Vec::new(),
+                        }
+                    ),
+                    (
+                        0x7f,
+                        LcsfAttDesc {
+                            is_optional: false,
+                            data_type: LcsfDataType::Subattributes,
+                            subatt_desc_arr: vec![
+                                (
+                                    0x30,
+                                    LcsfAttDesc {
+                                        is_optional: false,
+                                        data_type: LcsfDataType::Uint8,
                                         subatt_desc_arr: Vec::new(),
-                                    }),
-                                ],
-                            }),
-                        ],
-                    }),
-                    (0x40, LcsfAttDesc {
-                        is_optional: true,
-                        data_type: LcsfDataType::Uint16,
-                        subatt_desc_arr: Vec::new(),
-                    }),
+                                    }
+                                ),
+                                (
+                                    0x31,
+                                    LcsfAttDesc {
+                                        is_optional: false,
+                                        data_type: LcsfDataType::Subattributes,
+                                        subatt_desc_arr: vec![(
+                                            0x32,
+                                            LcsfAttDesc {
+                                                is_optional: true,
+                                                data_type: LcsfDataType::String,
+                                                subatt_desc_arr: Vec::new(),
+                                            }
+                                        ),],
+                                    }
+                                ),
+                            ],
+                        }
+                    ),
+                    (
+                        0x40,
+                        LcsfAttDesc {
+                            is_optional: true,
+                            data_type: LcsfDataType::Uint16,
+                            subatt_desc_arr: Vec::new(),
+                        }
+                    ),
                 ],
-            }),
-        ],
+            }
+        ),],
     };
-
-    static ref TEST_VALID_CMD:LcsfValidCmd = LcsfValidCmd {
+    static ref TEST_VALID_CMD: LcsfValidCmd = LcsfValidCmd {
         cmd_id: 0x12,
         att_arr: vec![
             LcsfValidAtt {
@@ -665,14 +710,12 @@ lazy_static! {
                         payload: LcsfValidAttPayload::Data(vec![0xa]),
                     },
                     LcsfValidAtt {
-                        payload: LcsfValidAttPayload::SubattArr(vec![
-                            LcsfValidAtt {
-                                payload: LcsfValidAttPayload::Data(vec![
-                                    0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c,
-                                    0x65, 0x70, 0x74, 0x69, 0x63, 0x00,
-                                ]),
-                            },
-                        ])
+                        payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![
+                                0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69,
+                                0x63, 0x00,
+                            ]),
+                        },])
                     },
                 ])
             },

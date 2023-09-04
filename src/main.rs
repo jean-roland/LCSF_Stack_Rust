@@ -5,22 +5,21 @@
 /// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
-
 // Imports
 use lazy_static::lazy_static;
 
 mod lcsf_transcoder;
 use lcsf_transcoder::LcsfModeEnum;
 mod lcsf_validator;
-use lcsf_validator::LcsfProtDesc;
-use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfAttDesc;
+use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfDataType;
-use lcsf_validator::LcsfValidCmd;
+use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidAtt;
 use lcsf_validator::LcsfValidAttPayload;
-mod lcsf_error;
+use lcsf_validator::LcsfValidCmd;
 mod lcsf_core;
+mod lcsf_error;
 use lcsf_core::LcsfCore;
 
 lazy_static! {
@@ -41,21 +40,24 @@ lazy_static! {
 }
 
 // Function called when a protocol received a valid command
-fn example_process(cmd:LcsfValidCmd){
+fn example_process(cmd: LcsfValidCmd) {
     if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
-        println!("[Protocol 0xab handle]: Command received:, id: {}, data: {:?}", cmd.cmd_id, data);
+        println!(
+            "[Protocol 0xab handle]: Command received:, id: {}, data: {:?}",
+            cmd.cmd_id, data
+        );
     };
 }
 
 // Custom function called when an lcsf error message is received
 #[allow(dead_code)]
-fn example_err_cb(cmd:LcsfValidCmd){
+fn example_err_cb(cmd: LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(cmd);
     println!("Custom function received error, location: {loc_str}, type: {type_str}");
 }
 
 // Function called when protocol sends a message
-fn example_send(buff:Vec<u8>) {
+fn example_send(buff: Vec<u8>) {
     println!("Buffer to send: {buff:?}");
 }
 
@@ -64,15 +66,13 @@ fn main() {
     // Example data
     let example_valid_cmd = LcsfValidCmd {
         cmd_id: 0x12,
-        att_arr: vec![
-            LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04]),
-            },
-        ]
+        att_arr: vec![LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04]),
+        }],
     };
-    let example_buff:Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
-    let err_buff:Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01];
-    let bad_data:Vec<u8> = vec![0xab, 0x10, 0x00];
+    let example_buff: Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
+    let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01];
+    let bad_data: Vec<u8> = vec![0xab, 0x10, 0x00];
 
     // Create lcsf core
     let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
