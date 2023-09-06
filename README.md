@@ -53,7 +53,7 @@ If you want to run the project as is use `cargo run`
 
 To run the test suite use `cargo test`
 
-To generate the doc use `cargo doc`, you can access the documentation at `target/doc/help.html`.
+To generate the doc use `cargo doc --no-deps`, you can access the documentation at `target/doc/help.html`.
 
 ## Resource usage
 

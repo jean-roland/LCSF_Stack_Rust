@@ -1,10 +1,12 @@
-/// author: Jean-Roland Gosse
-/// desc: Light Command Set Format core module
-///
-/// This file is part of LCSF Stack Rust.
-/// Spec details at https://jean-roland.github.io/LCSF_Doc/
-/// You should have received a copy of the GNU Lesser General Public License
-/// along with this program. If not, see <https://www.gnu.org/licenses/>
+//! Main module of the lcsf lib, instantiate an LcsfCore to use it
+//!
+//! author: Jean-Roland Gosse
+//!
+//! This file is part of LCSF Stack Rust.
+//! Spec details at <https://jean-roland.github.io/LCSF_Doc/>
+//! You should have received a copy of the GNU Lesser General Public License
+//! along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use std::collections::HashMap;
 
 use crate::lcsf_lib::lcsf_error;
@@ -17,20 +19,29 @@ use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidCmd;
 
-// Callback prototype
-pub type ProtCallback = fn(LcsfValidCmd); // Called to process a valid command
-pub type SendCallback = fn(Vec<u8>); // Called to send a byte array message
+/// Callback prototype to process a valid command
+pub type ProtCallback = fn(LcsfValidCmd);
+/// Callback prototype to send lcsf serialized data
+pub type SendCallback = fn(Vec<u8>);
 
+/// Main lcsf structure
 pub struct LcsfCore {
-    do_gen_err: bool, // Activate lcsf error packet generation if message decoding fails
-    lcsf_mode: LcsfModeEnum, // Lcsf representation mode to use
-    fn_send: SendCallback, // Send byte array callback
-    prot_desc_map: HashMap<u16, &'static LcsfProtDesc>, // Protocol descriptions hash map
-    prot_cb_map: HashMap<u16, ProtCallback>, // Protocol callbacks hash map
+    /// Activate lcsf error packet generation if message decoding fails
+    do_gen_err: bool,
+    /// Lcsf representation mode to use
+    lcsf_mode: LcsfModeEnum,
+    /// Send callback for lcsf serialized data
+    fn_send: SendCallback,
+    /// Protocol descriptions hash map
+    prot_desc_map: HashMap<u16, &'static LcsfProtDesc>,
+    /// Protocol callbacks hash map
+    prot_cb_map: HashMap<u16, ProtCallback>,
 }
 
-/// Default function to process received errors, replace as needed through update_err_cb()
-/// \param valid_cmd validated error command
+/// Default function to process received errors,
+/// replace as needed through update_err_cb()
+///
+/// valid_cmd: validated error command
 fn def_process_error(valid_cmd: LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(&valid_cmd);
     println!(
@@ -42,9 +53,12 @@ fn def_process_error(valid_cmd: LcsfValidCmd) {
 
 impl LcsfCore {
     /// Create an instance of a LcsfCore
-    /// \param mode lcsf representation mode to use
-    /// \param send_cb callback to send byte array
-    /// \param do_gen_err control lcsf error packet generation
+    ///
+    /// mode: lcsf representation mode to use, see [LcsfModeEnum]
+    ///
+    /// send_cb: callback to send byte array
+    ///
+    /// do_gen_err: control lcsf error packet generation
     pub fn new(mode: LcsfModeEnum, send_cb: SendCallback, do_gen_err: bool) -> Self {
         let err_prot_id = match mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
@@ -60,7 +74,8 @@ impl LcsfCore {
     }
 
     /// Change the error processing callback
-    /// \param new_err_cb new error callback
+    ///
+    /// new_err_cb: new error callback
     #[allow(dead_code)]
     pub fn update_err_cb(&mut self, new_err_cb: ProtCallback) {
         let err_prot_id = match self.lcsf_mode {
@@ -71,9 +86,12 @@ impl LcsfCore {
     }
 
     /// Add a protocol
-    /// \param prot_id protocol id
-    /// \param prot_desc protocol descriptor reference
-    /// \param prot_cb protocol callback
+    ///
+    /// prot_id: protocol id
+    ///
+    /// prot_desc: protocol descriptor reference
+    ///
+    /// prot_cb: protocol callback
     pub fn add_protocol(
         &mut self,
         prot_id: u16,
@@ -85,7 +103,8 @@ impl LcsfCore {
     }
 
     /// Process an incoming lcsf message
-    /// \param buff buffer reference
+    ///
+    /// buff: buffer reference
     pub fn receive_buff(&self, buff: &[u8]) -> bool {
         // Send to transcoder
         let raw_msg = match lcsf_transcoder::decode_buff(self.lcsf_mode, buff) {
@@ -129,8 +148,10 @@ impl LcsfCore {
     }
 
     /// Send an outgoing valid command
-    /// \param prot_id protocol id
-    /// \param valid_cmd valid command reference
+    ///
+    /// prot_id: protocol id
+    ///
+    /// valid_cmd: valid command reference
     pub fn send_cmd(&self, prot_id: u16, valid_cmd: &LcsfValidCmd) {
         // Retrieve cmd desc
         let prot_desc = self.prot_desc_map.get(&prot_id).unwrap();

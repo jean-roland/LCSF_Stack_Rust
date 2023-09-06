@@ -1,56 +1,74 @@
-/// author: Jean-Roland Gosse
-/// desc: Light Command Set Format transcoder module
-///
-/// This file is part of LCSF Stack Rust.
-/// Spec details at https://jean-roland.github.io/LCSF_Doc/
-/// You should have received a copy of the GNU Lesser General Public License
-/// along with this program. If not, see <https://www.gnu.org/licenses/>
+//! Serialize and de-serialize data buffer to and from LcsfRawMsg
+//!
+//! author: Jean-Roland Gosse
+//!
+//! This file is part of LCSF Stack Rust.
+//! Spec details at <https://jean-roland.github.io/LCSF_Doc/>
+//! You should have received a copy of the GNU Lesser General Public License
+//! along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use core::slice::Iter;
 
 /// Lcsf representation mode enum
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfModeEnum {
-    Small = 0,  // Smaller size lcsf (1 byte / field)
-    Normal = 1, // Regular size lcsf (2 bytes / field)
+    /// Smaller size lcsf (1 byte / field)
+    Small = 0,
+    /// Regular size lcsf (2 bytes / field)
+    Normal = 1,
 }
 
 /// Lcsf decoding error enum
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfDecodeErrorEnum {
-    FormatErr = 0x00, // Message formatting error, missing or leftover data compared to what's expected
-                      // OverflowErr = 0x01, // The message is too big/complex to be processed by the module (unused here)
+    /// Message formatting error, missing or leftover data compared to what's expected
+    FormatErr = 0x00,
+    /// The message is too big or too complex to be processed by the module
+    OverflowErr = 0x01,
 }
 
 /// Lcsf raw attribute payload union
 #[derive(Debug, PartialEq, Clone)]
 pub enum LcsfRawAttPayload {
-    Data(Vec<u8>),                     // Data array
-    SubattArr(Vec<(u16, LcsfRawAtt)>), // (id, sub-attribute) array
+    /// A vector of bytes containing the data
+    Data(Vec<u8>),
+    /// A vector containing the sub-attributes as (id, sub-attribute) tuple
+    SubattArr(Vec<(u16, LcsfRawAtt)>),
 }
 
 /// Lcsf raw attribute structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfRawAtt {
-    pub has_subatt: bool,  // Indicates if the attribute has sub attributes or data
-    pub payload_size: u16, // Data size (bytes) or sub-attribute number
-    pub payload: LcsfRawAttPayload, // See LcsfAttField
+    /// Indicates if the attribute has sub attributes or data
+    pub has_subatt: bool,
+    /// Data size (bytes) or sub-attribute number
+    pub payload_size: u16,
+    /// See [LcsfRawAttPayload]
+    pub payload: LcsfRawAttPayload,
 }
 
 /// Lcsf raw message structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfRawMsg {
-    pub prot_id: u16,                    // Protocol id
-    pub cmd_id: u16,                     // Command id
-    pub att_nb: u16,                     // Number of attributes
-    pub att_arr: Vec<(u16, LcsfRawAtt)>, // (id, attribute) array
+    /// Protocol id
+    pub prot_id: u16,
+    /// Command id
+    pub cmd_id: u16,
+    /// Number of attributes
+    pub att_nb: u16,
+    /// Vector of attributes as (id, attribute) tuple
+    pub att_arr: Vec<(u16, LcsfRawAtt)>,
 }
 
 // *** Decoder ***
 
-/// Fetch an lcsf_msg_header struct from a buffer iterator
-/// \param lcsf_mode parsing mode to use
-/// \param buff_iter reference to the buffer iterator
+/// Fetch a lcsf message header struct from a buffer iterator
+///
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// buff_iter: buffer iterator reference
 fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option<LcsfRawMsg> {
     let mut msg = LcsfRawMsg {
         prot_id: 0,
@@ -83,9 +101,11 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
     Some(msg)
 }
 
-/// Fetch an lcsf_att_header struct from a buffer iterator
-/// \param lcsf_mode parsing mode to use
-/// \param buff_iter reference to the buffer iterator
+/// Fetch a lcsf attribute header struct from a buffer iterator
+///
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// buff_iter: buffer iterator reference
 fn fetch_att_header(
     lcsf_mode: LcsfModeEnum,
     buff_iter: &mut Iter<u8>,
@@ -119,10 +139,11 @@ fn fetch_att_header(
     Some((att_id, att))
 }
 
-/// Decode recursively the lcsf attributes from a buffer iterator
+/// Decode recursively a lcsf attribute from a buffer iterator
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param buff_iter reference to the buffer iterator
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// buff_iter: buffer iterator reference
 fn decode_att_rec(
     lcsf_mode: LcsfModeEnum,
     buff_iter: &mut Iter<u8>,
@@ -158,8 +179,9 @@ fn decode_att_rec(
 
 /// Decode a buffer into a LcsfRawMsg
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param buffer reference to the data buffer
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// buffer: data buffer reference
 pub fn decode_buff(
     lcsf_mode: LcsfModeEnum,
     buffer: &[u8],
@@ -189,8 +211,9 @@ pub fn decode_buff(
 
 /// Encode a lcsf message header into a buffer
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param msg reference to the lcsf message header
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// msg: lcsf message header reference
 fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 
@@ -220,9 +243,11 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
 
 /// Encode a lcsf attribute header into a buffer
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param att_id attribute id value
-/// \param att reference to the lcsf attribute header
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// att_id: attribute id value
+///
+/// att: attribute header to encode reference
 fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 
@@ -256,11 +281,13 @@ fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Ve
     buffer
 }
 
-/// Recursively encode a LcsfRawAtt array into a buffer
+/// Recursively encode a LcsfRawAtt into a buffer
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param att_id attribute id value
-/// \param att reference to the LcsfRawAtt
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// att_id: attribute id value
+///
+/// att: attribute to encode reference
 fn encode_att_rec(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 
@@ -285,8 +312,9 @@ fn encode_att_rec(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec
 
 /// Encode a LcsfRawMsg into a buffer
 ///
-/// \param lcsf_mode parsing mode to use
-/// \param msg reference to the LcsfRawMsg
+/// lcsf_mode: parsing mode to use, see [LcsfModeEnum]
+///
+/// msg: message to encode reference
 pub fn encode_buff(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 

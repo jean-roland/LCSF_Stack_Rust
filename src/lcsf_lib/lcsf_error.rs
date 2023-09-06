@@ -1,10 +1,12 @@
-/// author: Jean-Roland Gosse
-/// desc: Light Command Set Format error module
-///
-/// This file is part of LCSF Stack Rust.
-/// Spec info at https://jean-roland.github.io/LCSF_Doc/
-/// You should have received a copy of the GNU Lesser General Public License
-/// along with this program. If not, see <https://www.gnu.org/licenses/>
+//! Generate and decode message for the lcsf built-in error protocol (lcsf ep)
+//!
+//! author: Jean-Roland Gosse
+//!
+//! This file is part of LCSF Stack Rust.
+//! Spec info at <https://jean-roland.github.io/LCSF_Doc/>
+//! You should have received a copy of the GNU Lesser General Public License
+//! along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use lazy_static::lazy_static;
 
 use crate::lcsf_lib::lcsf_transcoder;
@@ -20,18 +22,19 @@ use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidAttPayload;
 use lcsf_validator::LcsfValidCmd;
 
-// Lcsf error protocol (Lcsf ep) id
+/// Lcsf ep small mode protocol id
 pub const LCSF_EP_PROT_ID_NORMAL: u16 = 0xFFFF;
+/// Lcsf ep normal mode protocol id
 pub const LCSF_EP_PROT_ID_SMALL: u16 = 0x00FF;
 
-// Lcsf ep attribute location values
+/// Lcsf ep attribute location values
 pub enum LcsfEpLocEnum {
     DecodeError = 0x00,
     ValidationError = 0x01,
 }
 
-// Lcsf ep protocol description
 lazy_static! {
+    /// Lcsf ep protocol description
     pub static ref LCSF_EP_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
         cmd_desc_arr: vec![(
             0x00,
@@ -66,9 +69,12 @@ const LCSF_EP_TYPE_ATT_ID: u16 = 0x0001;
 const LCSF_EP_ERR_CMD_ATT_NB: u16 = 2;
 
 /// Encode a lcsf error message into a buffer
-/// \param lcsf_mode encoding mode value
-/// \param errorLoc location of the error encountered
-/// \param errorType type of the error encountered
+///
+/// lcsf_mode: encoding mode value
+///
+/// errorLoc: location of the error encountered
+///
+/// errorType: type of the error encountered
 pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_type: u8) -> Vec<u8> {
     // Init protocol id
     let mut prot_id: u16 = LCSF_EP_PROT_ID_NORMAL;
@@ -104,7 +110,8 @@ pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_typ
 }
 
 /// Process a lcsf error message
-/// \param valid_cmd validated error message reference
+///
+/// valid_cmd: validated error message reference
 pub fn process_error(valid_cmd: &LcsfValidCmd) -> (&str, &str) {
     let mut err_loc = 0;
     let mut err_type = 0;

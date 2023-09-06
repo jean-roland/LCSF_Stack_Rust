@@ -1,10 +1,12 @@
-/// author: Jean-Roland Gosse
-/// desc: Light Command Set Format validator module
-///
-/// This file is part of LCSF Stack Rust.
-/// Spec details at https://jean-roland.github.io/LCSF_Doc/
-/// You should have received a copy of the GNU Lesser General Public License
-/// along with this program. If not, see <https://www.gnu.org/licenses/>
+//! Translate a LcsfRawMsg to and from a LcsfValidCmd following a protocol description
+//!
+//! author: Jean-Roland Gosse
+//!
+//! This file is part of LCSF Stack Rust.
+//! Spec details at <https://jean-roland.github.io/LCSF_Doc/>
+//! You should have received a copy of the GNU Lesser General Public License
+//! along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use core::mem::size_of;
 use std::collections::HashMap;
 
@@ -13,7 +15,7 @@ use lcsf_transcoder::LcsfRawAtt;
 use lcsf_transcoder::LcsfRawAttPayload;
 use lcsf_transcoder::LcsfRawMsg;
 
-// Data type enum
+/// Attribute data type enum
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfDataType {
@@ -25,40 +27,41 @@ pub enum LcsfDataType {
     Subattributes,
 }
 
-// Lcsf attribute descriptor structure
+/// Lcsf attribute descriptor structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfAttDesc {
-    pub is_optional: bool, // Indicates if attribute optional
+    /// Indicates attribute is optional or not
+    pub is_optional: bool,
     pub data_type: LcsfDataType,
     pub subatt_desc_arr: Vec<(u16, LcsfAttDesc)>,
 }
 
-// Lcsf command descriptor structure
+/// Lcsf command descriptor structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfCmdDesc {
     pub att_desc_arr: Vec<(u16, LcsfAttDesc)>,
 }
 
-// Lcsf protocol descriptor structure */
+/// Lcsf protocol descriptor structure
 #[derive(Debug, PartialEq)]
 pub struct LcsfProtDesc {
     pub cmd_desc_arr: Vec<(u16, LcsfCmdDesc)>,
 }
 
-// Lcsf valid attribute payload union
+/// Lcsf valid attribute payload union
 #[derive(Debug, PartialEq, Clone)]
 pub enum LcsfValidAttPayload {
     Data(Vec<u8>),
     SubattArr(Vec<LcsfValidAtt>),
 }
 
-// Lcsf valid attribute structure
+/// Lcsf valid attribute structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfValidAtt {
     pub payload: LcsfValidAttPayload,
 }
 
-// Lcsf valid command structure
+/// Lcsf valid command structure
 #[derive(Debug, PartialEq, Clone)]
 pub struct LcsfValidCmd {
     pub cmd_id: u16,
@@ -68,19 +71,27 @@ pub struct LcsfValidCmd {
 /// Lcsf decoding error enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LcsfValidateErrorEnum {
-    UnknownProtId = 0x00,    // Unknown protocol id
-    UnknownCmdId = 0x01,     // Unknown command id
-    UnknownAttId = 0x02,     // Unknown attribute id
-    TooManyAtt = 0x03,       // Too many attributes received
-    MissMandatoryAtt = 0x04, // Missing mandatory attribute
-    WrongAttDataType = 0x05, // Wrong attribute data type
+    /// Unknown protocol id
+    UnknownProtId = 0x00,
+    /// Unknown command id
+    UnknownCmdId = 0x01,
+    /// Unknown attribute id
+    UnknownAttId = 0x02,
+    /// Too many attributes received
+    TooManyAtt = 0x03,
+    /// Missing mandatory attribute
+    MissMandatoryAtt = 0x04,
+    /// Wrong attribute data type
+    WrongAttDataType = 0x05,
 }
 
 // *** Validate raw ***
 
 /// Validate the data size of received attribute payload
-/// \param data_size size of the data
-/// \param data_type type of the data
+///
+/// data_size: size of the data
+///
+/// data_type: type of the data
 fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     // Check data type
     match data_type {
@@ -93,10 +104,14 @@ fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     }
 }
 
-/// Recursively validate received attributes and their payload
-/// \param att_id attribute id value
-/// \param att_desc attribute descriptor reference
-/// \param rx_att_arr received (id, attribute) array reference
+/// Recursively validate & received attribute and its payload
+///
+/// att_id: attribute id value
+///
+/// att_desc: attribute descriptor reference
+///
+/// rx_att_arr: received (id, attribute) array reference
+///
 fn validate_att_rec(
     att_id: u16,
     att_desc: &LcsfAttDesc,
@@ -172,8 +187,10 @@ fn validate_att_rec(
 }
 
 /// Validate a received lcsf raw message
-/// \param prot_desc_map (protocol id, protocol descriptor) hash map reference
-/// \param rx_msg received message reference
+///
+/// prot_desc_map: (protocol id, protocol descriptor) hash map reference
+///
+/// rx_msg: received message reference
 pub fn validate_msg(
     prot_desc_map: &HashMap<u16, &LcsfProtDesc>,
     rx_msg: &LcsfRawMsg,
@@ -210,8 +227,10 @@ pub fn validate_msg(
 // *** Encode valid ***
 
 /// Fill a raw attribute info from a valid attribute
-/// \param data_type attribute data type from descriptor
-/// \param valid_att valid attribute reference
+///
+/// data_type: attribute data type from descriptor
+///
+/// valid_att: valid attribute reference
 fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<LcsfRawAtt> {
     let mut raw_att = LcsfRawAtt {
         has_subatt: false,
@@ -269,8 +288,10 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
 }
 
 /// Fill recursively a raw attribute from a valid attribute following a descriptor
-/// \param att_desc attribute descriptor reference
-/// \param valid_att valid attribute reference
+///
+/// att_desc: attribute descriptor reference
+///
+/// valid_att: valid attribute reference
 fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<LcsfRawAtt> {
     // Init raw_att
     let mut raw_att = LcsfRawAtt {
@@ -323,9 +344,12 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
 }
 
 /// Encode a valid command and its descriptor into a lcsf raw message
-/// \param prot_id protocol id
-/// \param cmd_desc command descriptor reference
-/// \param valid_cmd valid command reference
+///
+/// prot_id: protocol id
+///
+/// cmd_desc: command descriptor reference
+///
+/// valid_cmd: valid command reference
 pub fn encode_valid(
     prot_id: u16,
     cmd_desc: &LcsfCmdDesc,

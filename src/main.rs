@@ -1,10 +1,12 @@
-/// author: Jean-Roland Gosse
-/// desc: Example main
-///
-/// This file is part of LCSF Stack Rust.
-/// Spec details at https://jean-roland.github.io/LCSF_Doc/
-/// You should have received a copy of the GNU Lesser General Public License
-/// along with this program. If not, see <https://www.gnu.org/licenses/>
+//! Example main on how to use the lcsf lib
+//!
+//! author: Jean-Roland Gosse
+//!
+//! This file is part of LCSF Stack Rust.
+//! Spec details at <https://jean-roland.github.io/LCSF_Doc/>
+//! You should have received a copy of the GNU Lesser General Public License
+//! along with this program. If not, see <https://www.gnu.org/licenses/>
+
 use lazy_static::lazy_static;
 
 mod lcsf_lib;
@@ -20,7 +22,7 @@ use lcsf_lib::lcsf_validator::LcsfValidAttPayload;
 use lcsf_lib::lcsf_validator::LcsfValidCmd;
 
 lazy_static! {
-    // Example descriptor
+    /// Example descriptor
     static ref EXAMPLE_DESC:LcsfProtDesc = LcsfProtDesc {
         cmd_desc_arr: vec![
             (0x12, LcsfCmdDesc {
@@ -36,7 +38,7 @@ lazy_static! {
     };
 }
 
-// Function called when a protocol received a valid command
+/// Function called when a protocol received a valid command
 fn example_process(cmd: LcsfValidCmd) {
     if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
         println!(
@@ -46,19 +48,19 @@ fn example_process(cmd: LcsfValidCmd) {
     };
 }
 
-// Custom function called when an lcsf error message is received
+/// Custom function called when an lcsf error message is received
 #[allow(dead_code)]
 fn example_err_cb(cmd: LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(&cmd);
     println!("Custom function received error, location: {loc_str}, type: {type_str}");
 }
 
-// Function called when protocol sends a message
+/// Function called when protocol sends a message
 fn example_send(buff: Vec<u8>) {
     println!("Buffer to send: {buff:?}");
 }
 
-// Main
+/// Main function
 fn main() {
     // Example data
     let example_valid_cmd = LcsfValidCmd {
