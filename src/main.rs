@@ -5,22 +5,19 @@
 /// Spec details at https://jean-roland.github.io/LCSF_Doc/
 /// You should have received a copy of the GNU Lesser General Public License
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
-// Imports
 use lazy_static::lazy_static;
 
-mod lcsf_transcoder;
-use lcsf_transcoder::LcsfModeEnum;
-mod lcsf_validator;
-use lcsf_validator::LcsfAttDesc;
-use lcsf_validator::LcsfCmdDesc;
-use lcsf_validator::LcsfDataType;
-use lcsf_validator::LcsfProtDesc;
-use lcsf_validator::LcsfValidAtt;
-use lcsf_validator::LcsfValidAttPayload;
-use lcsf_validator::LcsfValidCmd;
-mod lcsf_core;
-mod lcsf_error;
-use lcsf_core::LcsfCore;
+mod lcsf_lib;
+use lcsf_lib::lcsf_core::LcsfCore;
+use lcsf_lib::lcsf_error;
+use lcsf_lib::lcsf_transcoder::LcsfModeEnum;
+use lcsf_lib::lcsf_validator::LcsfAttDesc;
+use lcsf_lib::lcsf_validator::LcsfCmdDesc;
+use lcsf_lib::lcsf_validator::LcsfDataType;
+use lcsf_lib::lcsf_validator::LcsfProtDesc;
+use lcsf_lib::lcsf_validator::LcsfValidAtt;
+use lcsf_lib::lcsf_validator::LcsfValidAttPayload;
+use lcsf_lib::lcsf_validator::LcsfValidCmd;
 
 lazy_static! {
     // Example descriptor

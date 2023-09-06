@@ -8,7 +8,7 @@
 use core::mem::size_of;
 use std::collections::HashMap;
 
-use crate::lcsf_transcoder;
+use crate::lcsf_lib::lcsf_transcoder;
 use lcsf_transcoder::LcsfRawAtt;
 use lcsf_transcoder::LcsfRawAttPayload;
 use lcsf_transcoder::LcsfRawMsg;

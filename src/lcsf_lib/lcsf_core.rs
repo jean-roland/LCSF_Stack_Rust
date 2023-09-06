@@ -7,9 +7,9 @@
 /// along with this program. If not, see <https://www.gnu.org/licenses/>
 use std::collections::HashMap;
 
-use crate::lcsf_error;
-use crate::lcsf_transcoder;
-use crate::lcsf_validator;
+use crate::lcsf_lib::lcsf_error;
+use crate::lcsf_lib::lcsf_transcoder;
+use crate::lcsf_lib::lcsf_validator;
 use lcsf_error::LcsfEpLocEnum;
 use lcsf_error::LCSF_EP_PROT_DESC;
 use lcsf_transcoder::LcsfModeEnum;
