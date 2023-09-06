@@ -272,6 +272,8 @@ mod tests {
         let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02];
 
         let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, dummy_send_callback, false);
+        // Use default error callback
+        assert!(lcsf_core.receive_buff(&err_buff));
         // Update the error callback
         lcsf_core.update_err_cb(test_err_callback);
         // Send buffer
@@ -285,8 +287,9 @@ mod tests {
 
     fn test_bad_data_callback(buff: Vec<u8>) {
         let bad_data: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x00];
+        let unknwn_prot_id: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00];
 
-        if buff == bad_data {
+        if buff == bad_data || buff == unknwn_prot_id {
             BAD_DATA_IS_VALID.store(true, Ordering::SeqCst);
         }
     }
@@ -294,12 +297,18 @@ mod tests {
     #[test]
     fn test_error_encoding() {
         // Test data
-        let bad_buff: Vec<u8> = vec![0xab, 0x12, 0x05]; // Bad format error
+        let bad_format_buff: Vec<u8> = vec![0xab, 0x12, 0x05];
+        let bad_prot_id_buff: Vec<u8> = vec![0x55, 0x01, 0x00];
 
         let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, test_bad_data_callback, true);
         // Send buffer
-        assert!(!lcsf_core.receive_buff(&bad_buff));
+        assert!(!lcsf_core.receive_buff(&bad_format_buff));
         // Check value
+        let is_valid: bool = BAD_DATA_IS_VALID.load(Ordering::SeqCst);
+        assert!(is_valid);
+        BAD_DATA_IS_VALID.store(false, Ordering::SeqCst);
+        // Send second buffer
+        assert!(!lcsf_core.receive_buff(&bad_prot_id_buff));
         let is_valid: bool = BAD_DATA_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
     }

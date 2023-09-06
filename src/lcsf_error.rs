@@ -194,13 +194,29 @@ mod tests {
                     payload: LcsfValidAttPayload::Data(vec![0x00]),
                 },
                 LcsfValidAtt {
-                    payload: LcsfValidAttPayload::Data(vec![0x01]),
+                    payload: LcsfValidAttPayload::Data(vec![0x00]),
                 },
             ],
         };
         let (mut loc_str, mut type_str) = process_error(&valid_cmd);
         assert_eq!(loc_str, "Decoder");
+        assert_eq!(type_str, "Bad format");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x01]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Decoder");
         assert_eq!(type_str, "Overflow");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x02]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Decoder");
+        assert_eq!(type_str, "Unknown");
 
         valid_cmd = LcsfValidCmd {
             cmd_id: LCSF_EP_ERR_CMD_ID,
@@ -209,12 +225,75 @@ mod tests {
                     payload: LcsfValidAttPayload::Data(vec![0x01]),
                 },
                 LcsfValidAtt {
-                    payload: LcsfValidAttPayload::Data(vec![0x04]),
+                    payload: LcsfValidAttPayload::Data(vec![0x00]),
                 },
             ],
         };
         (loc_str, type_str) = process_error(&valid_cmd);
         assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Unknown protocol id");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x01]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Unknown command id");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x02]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Unknown attribute id");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x03]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Too many attributes received");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x04]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
         assert_eq!(type_str, "Missing mandatory attribute");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x05]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Wrong attribute data type");
+
+        valid_cmd.att_arr.pop();
+        valid_cmd.att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(vec![0x06]),
+        });
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Validator");
+        assert_eq!(type_str, "Unknown");
+
+        valid_cmd = LcsfValidCmd {
+            cmd_id: LCSF_EP_ERR_CMD_ID,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x02]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00]),
+                },
+            ],
+        };
+        (loc_str, type_str) = process_error(&valid_cmd);
+        assert_eq!(loc_str, "Unknown");
+        assert_eq!(type_str, "Unknown");
     }
 }

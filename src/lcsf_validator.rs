@@ -359,6 +359,12 @@ mod tests {
     use lazy_static::lazy_static;
 
     #[test]
+    fn test_validate_data_type() {
+        assert!(!validate_data_type(2, LcsfDataType::Uint32));
+        assert!(validate_data_type(4, LcsfDataType::Uint32));
+    }
+
+    #[test]
     fn test_validate_att_rec() {
         let bad_att1 = vec![(
             0x40,
@@ -554,7 +560,23 @@ mod tests {
             None => {}
         }
         valid_att_err.payload = LcsfValidAttPayload::Data(Vec::new());
+        match fill_att_info(LcsfDataType::Uint8, &valid_att_err) {
+            Some(_) => panic!("fill_att_info should fail"),
+            None => {}
+        }
+        match fill_att_info(LcsfDataType::Uint16, &valid_att_err) {
+            Some(_) => panic!("fill_att_info should fail"),
+            None => {}
+        }
         match fill_att_info(LcsfDataType::Uint32, &valid_att_err) {
+            Some(_) => panic!("fill_att_info should fail"),
+            None => {}
+        }
+        match fill_att_info(LcsfDataType::ByteArray, &valid_att_err) {
+            Some(_) => panic!("fill_att_info should fail"),
+            None => {}
+        }
+        match fill_att_info(LcsfDataType::String, &valid_att_err) {
             Some(_) => panic!("fill_att_info should fail"),
             None => {}
         }
@@ -591,10 +613,25 @@ mod tests {
         let mut test_att_desc = LcsfAttDesc {
             is_optional: false,
             data_type: LcsfDataType::Subattributes,
+            subatt_desc_arr: vec![(
+                0x0a,
+                LcsfAttDesc {
+                    is_optional: false,
+                    data_type: LcsfDataType::Uint32,
+                    subatt_desc_arr: Vec::new(),
+                },
+            )],
+        };
+        let mut test_data_att_desc = LcsfAttDesc {
+            is_optional: false,
+            data_type: LcsfDataType::Uint32,
             subatt_desc_arr: Vec::new(),
         };
         let empty_valid_att = LcsfValidAtt {
             payload: LcsfValidAttPayload::SubattArr(Vec::new()),
+        };
+        let valid_data_att = LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(Vec::new()),
         };
         let empty_raw_att = LcsfRawAtt {
             has_subatt: false,
@@ -606,7 +643,22 @@ mod tests {
             Some(_) => panic!("fill_att_rec should fail"),
             None => {}
         }
+        test_att_desc.subatt_desc_arr = Vec::new();
+        match fill_att_rec(&test_att_desc, &empty_valid_att) {
+            Some(_) => panic!("fill_att_rec should fail"),
+            None => {}
+        }
+        match fill_att_rec(&test_data_att_desc, &valid_data_att) {
+            Some(_) => panic!("fill_att_rec should fail"),
+            None => {}
+        }
         // Test valid
+        test_data_att_desc.is_optional = true;
+        match fill_att_rec(&test_data_att_desc, &valid_data_att) {
+            Some(raw_att) => assert_eq!(raw_att, empty_raw_att),
+            None => panic!("fill_att_rec should not fail"),
+        }
+        test_att_desc.subatt_desc_arr = Vec::new();
         test_att_desc.is_optional = true;
         match fill_att_rec(&test_att_desc, &empty_valid_att) {
             Some(raw_att) => assert_eq!(raw_att, empty_raw_att),

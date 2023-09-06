@@ -341,8 +341,14 @@ mod tests {
 
     #[test]
     fn test_decode_att_rec() {
+        let bad_att_data = [0xab, 0x12, 0x01, 0x00, 0x05, 0x01];
+
         // Test error
         match decode_att_rec(LcsfModeEnum::Small, &mut [].iter()) {
+            Ok(_) => panic!("decode_att_rec should fail"),
+            Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
+        }
+        match decode_att_rec(LcsfModeEnum::Small, &mut bad_att_data.iter()) {
             Ok(_) => panic!("decode_att_rec should fail"),
             Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
         }
@@ -374,8 +380,15 @@ mod tests {
 
     #[test]
     fn test_decode_buff() {
+        let bad_fmt_msg: Vec<u8> = vec![0xab, 0x12];
+        let too_long_msg: Vec<u8> = vec![0xab, 0x12, 0x01, 0x00, 0x01, 0x00, 0x55];
+
         // Test error
-        match decode_buff(LcsfModeEnum::Small, BAD_FORMAT_MSG) {
+        match decode_buff(LcsfModeEnum::Small, &bad_fmt_msg) {
+            Ok(_) => panic!("decode_buff should fail"),
+            Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
+        }
+        match decode_buff(LcsfModeEnum::Small, &too_long_msg) {
             Ok(_) => panic!("decode_buff should fail"),
             Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
         }
@@ -480,8 +493,6 @@ mod tests {
     }
 
     // Test data
-    const BAD_FORMAT_MSG: &'static [u8] = &[0xaa, 0x01, 0x0a];
-
     const RX_MSG_SMALL: &'static [u8] = &[
         0xab, 0x12, 0x03, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0xff, 0x02, 0x30, 0x01, 0x0a,
         0xb1, 0x01, 0x32, 0x0d, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69,
