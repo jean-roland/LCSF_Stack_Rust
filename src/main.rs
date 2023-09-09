@@ -20,6 +20,7 @@ use lcsf_lib::lcsf_validator::LcsfProtDesc;
 use lcsf_lib::lcsf_validator::LcsfValidAtt;
 use lcsf_lib::lcsf_validator::LcsfValidAttPayload;
 use lcsf_lib::lcsf_validator::LcsfValidCmd;
+mod lcsf_prot;
 
 lazy_static! {
     /// Example descriptor
