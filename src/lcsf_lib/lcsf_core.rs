@@ -20,7 +20,7 @@ use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidCmd;
 
 /// Callback prototype to process a valid command
-pub type ProtCallback = fn(LcsfValidCmd);
+pub type ProtCallback = fn(&LcsfValidCmd);
 /// Callback prototype to send lcsf serialized data
 pub type SendCallback = fn(Vec<u8>);
 
@@ -42,7 +42,7 @@ pub struct LcsfCore {
 /// replace as needed through update_err_cb()
 ///
 /// valid_cmd: validated error command
-fn def_process_error(valid_cmd: LcsfValidCmd) {
+fn def_process_error(valid_cmd: &LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(&valid_cmd);
     println!(
         "[{}:{}]: Received error, location: {loc_str}, type: {type_str}",
@@ -143,7 +143,7 @@ impl LcsfCore {
         };
         // Dispatch command
         let prot_cb = self.prot_cb_map.get(&prot_id).unwrap();
-        prot_cb(valid_msg);
+        prot_cb(&valid_msg);
         true
     }
 
@@ -177,7 +177,7 @@ mod tests {
     }
 
     // Mock for ProtCallback
-    fn dummy_prot_callback(_: LcsfValidCmd) {}
+    fn dummy_prot_callback(_: &LcsfValidCmd) {}
 
     lazy_static! {
         static ref TEST_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
@@ -211,14 +211,14 @@ mod tests {
         // Check current callback
         let err_prot_id = lcsf_error::LCSF_EP_PROT_ID_NORMAL;
         let mut error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
-        if *error_callback != def_process_error as fn(LcsfValidCmd) {
+        if *error_callback != def_process_error as ProtCallback {
             panic!("Invalid callback pointer");
         }
         // Update the error callback
         lcsf_core.update_err_cb(dummy_prot_callback);
         // Assert that the error callback is updated correctly
         error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
-        if *error_callback != dummy_prot_callback as fn(LcsfValidCmd) {
+        if *error_callback != dummy_prot_callback as ProtCallback {
             panic!("Invalid callback pointer");
         }
     }
@@ -232,7 +232,7 @@ mod tests {
         let prot_desc = lcsf_core.prot_desc_map.get(&0xab).unwrap();
         let callback = lcsf_core.prot_cb_map.get(&0xab).unwrap();
         assert_eq!(**prot_desc, *TEST_PROT_DESC);
-        if *callback != dummy_prot_callback as fn(LcsfValidCmd) {
+        if *callback != dummy_prot_callback as ProtCallback {
             panic!("Invalid callback pointer");
         }
     }
@@ -241,8 +241,8 @@ mod tests {
 
     static CMD_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_prot_callback(valid_cmd: LcsfValidCmd) {
-        if valid_cmd == *TEST_VALID_CMD {
+    fn test_prot_callback(valid_cmd: &LcsfValidCmd) {
+        if valid_cmd == &TEST_VALID_CMD as &LcsfValidCmd {
             CMD_IS_VALID.store(true, Ordering::SeqCst);
         }
     }
@@ -280,7 +280,7 @@ mod tests {
 
     static ERR_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_err_callback(valid_cmd: LcsfValidCmd) {
+    fn test_err_callback(valid_cmd: &LcsfValidCmd) {
         let (loc_str, type_str) = lcsf_error::process_error(&valid_cmd);
         if loc_str == "Validator" && type_str == "Unknown attribute id" {
             ERR_IS_VALID.store(true, Ordering::SeqCst);

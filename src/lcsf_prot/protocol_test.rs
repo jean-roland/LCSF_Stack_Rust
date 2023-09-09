@@ -502,7 +502,7 @@ pub fn init_core(core: &'static mut LcsfCore) {
 /// Process command callback, customize as you need
 ///
 /// valid_cmd: received valid command
-fn process_cmd(valid_cmd: LcsfValidCmd) {
+fn process_cmd(valid_cmd: &LcsfValidCmd) {
     let (mut cmd_name, mut cmd_payload) = lcsf_protocol_test::receive_cmd(&valid_cmd);
     (cmd_name, cmd_payload) = execute_cmd(cmd_name, &cmd_payload);
     let valid_cmd = lcsf_protocol_test::send_cmd(cmd_name, &cmd_payload);

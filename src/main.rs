@@ -40,7 +40,7 @@ lazy_static! {
 }
 
 /// Function called when a protocol received a valid command
-fn example_process(cmd: LcsfValidCmd) {
+fn example_process(cmd: &LcsfValidCmd) {
     if let LcsfValidAttPayload::Data(data) = &cmd.att_arr[0].payload {
         println!(
             "[Protocol 0xab handle]: Command received:, id: {}, data: {:?}",
