@@ -20,11 +20,12 @@ use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidCmd;
 
 /// Callback prototype to process a valid command
-pub type ProtCallback = fn(&LcsfValidCmd);
+pub type ProtCallback = fn(&LcsfCore, &LcsfValidCmd);
 /// Callback prototype to send lcsf serialized data
 pub type SendCallback = fn(&[u8]);
 
 /// Main lcsf structure
+#[derive(Debug)]
 pub struct LcsfCore {
     /// Activate lcsf error packet generation if message decoding fails
     do_gen_err: bool,
@@ -42,7 +43,7 @@ pub struct LcsfCore {
 /// replace as needed through update_err_cb()
 ///
 /// valid_cmd: validated error command
-fn def_process_error(valid_cmd: &LcsfValidCmd) {
+fn def_process_error(_: &LcsfCore, valid_cmd: &LcsfValidCmd) {
     let (loc_str, type_str) = lcsf_error::process_error(valid_cmd);
     println!(
         "[{}:{}]: Received error, location: {loc_str}, type: {type_str}",
@@ -143,7 +144,7 @@ impl LcsfCore {
         };
         // Dispatch command
         let prot_cb = self.prot_cb_map.get(&prot_id).unwrap();
-        prot_cb(&valid_msg);
+        prot_cb(self, &valid_msg);
         true
     }
 
@@ -177,7 +178,7 @@ mod tests {
     }
 
     // Mock for ProtCallback
-    fn dummy_prot_callback(_: &LcsfValidCmd) {}
+    fn dummy_prot_callback(_: &LcsfCore, _: &LcsfValidCmd) {}
 
     lazy_static! {
         static ref TEST_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
@@ -241,7 +242,7 @@ mod tests {
 
     static CMD_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_prot_callback(valid_cmd: &LcsfValidCmd) {
+    fn test_prot_callback(_: &LcsfCore, valid_cmd: &LcsfValidCmd) {
         if valid_cmd == &TEST_VALID_CMD as &LcsfValidCmd {
             CMD_IS_VALID.store(true, Ordering::SeqCst);
         }
@@ -280,7 +281,7 @@ mod tests {
 
     static ERR_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_err_callback(valid_cmd: &LcsfValidCmd) {
+    fn test_err_callback(_: &LcsfCore, valid_cmd: &LcsfValidCmd) {
         let (loc_str, type_str) = lcsf_error::process_error(&valid_cmd);
         if loc_str == "Validator" && type_str == "Unknown attribute id" {
             ERR_IS_VALID.store(true, Ordering::SeqCst);
