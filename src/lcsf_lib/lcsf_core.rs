@@ -22,7 +22,7 @@ use lcsf_validator::LcsfValidCmd;
 /// Callback prototype to process a valid command
 pub type ProtCallback = fn(&LcsfValidCmd);
 /// Callback prototype to send lcsf serialized data
-pub type SendCallback = fn(Vec<u8>);
+pub type SendCallback = fn(&[u8]);
 
 /// Main lcsf structure
 pub struct LcsfCore {
@@ -117,7 +117,7 @@ impl LcsfCore {
                         LcsfEpLocEnum::DecodeError,
                         err as u8,
                     );
-                    (self.fn_send)(buff);
+                    (self.fn_send)(&buff);
                 }
                 return false;
             }
@@ -135,7 +135,7 @@ impl LcsfCore {
                         LcsfEpLocEnum::ValidationError,
                         err as u8,
                     );
-                    (self.fn_send)(buff);
+                    (self.fn_send)(&buff);
                 }
                 return false;
             }
@@ -162,7 +162,7 @@ impl LcsfCore {
         let raw_msg = lcsf_validator::encode_valid(prot_id, cmd_desc, valid_cmd).unwrap();
         let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg);
         // Send buffer
-        (self.fn_send)(buff);
+        (self.fn_send)(&buff);
     }
 }
 
@@ -172,7 +172,7 @@ mod tests {
     use lazy_static::lazy_static;
 
     // Mock for SendCallback
-    fn dummy_send_callback(_: Vec<u8>) {
+    fn dummy_send_callback(_: &[u8]) {
         // Mock implementation
     }
 
@@ -261,7 +261,7 @@ mod tests {
 
     static BUFF_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_send_callback(buff: Vec<u8>) {
+    fn test_send_callback(buff: &[u8]) {
         if buff == *TEST_BUFF {
             BUFF_IS_VALID.store(true, Ordering::SeqCst);
         }
@@ -306,7 +306,7 @@ mod tests {
 
     static BAD_DATA_IS_VALID: AtomicBool = AtomicBool::new(false);
 
-    fn test_bad_data_callback(buff: Vec<u8>) {
+    fn test_bad_data_callback(buff: &[u8]) {
         let bad_data: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x00];
         let unknwn_prot_id: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00];
 
