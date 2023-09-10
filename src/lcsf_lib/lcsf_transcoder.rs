@@ -290,7 +290,10 @@ fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Ve
 /// att: attribute to encode reference
 fn encode_att_rec(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
-
+    // Skip empty raw attributes
+    if att.payload_size == 0 {
+        return buffer;
+    }
     // Fill attribute header
     buffer.extend(fill_att_header(lcsf_mode, att_id, att));
     // Check payload type

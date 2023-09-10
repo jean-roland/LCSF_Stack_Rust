@@ -227,13 +227,35 @@ pub fn validate_msg(
         }
     }
     // Unrecognized attribute case
-    if att_count < valid_cmd.att_arr.len() {
+    if att_count < rx_msg.att_arr.len() {
         return Err(LcsfValidateErrorEnum::UnknownAttId);
     }
     Ok((valid_cmd, rx_msg.prot_id))
 }
 
 // *** Encode valid ***
+
+/// Count the number of non-empty valid attributes
+///
+/// att_arr: attribute array reference
+fn cnt_non_empty_att(att_arr: &[LcsfValidAtt]) -> u16 {
+    let mut cnt: u16 = 0;
+    for att in att_arr {
+        match &att.payload {
+            LcsfValidAttPayload::SubattArr(subatt_arr) => {
+                if !subatt_arr.is_empty() {
+                    cnt += 1;
+                }
+            }
+            LcsfValidAttPayload::Data(data) => {
+                if !data.is_empty() {
+                    cnt += 1;
+                }
+            }
+        }
+    }
+    cnt
+}
 
 /// Fill a raw attribute info from a valid attribute
 ///
@@ -254,7 +276,7 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
             }
             // Note data
             raw_att.has_subatt = true;
-            raw_att.payload_size = subatt_arr.len() as u16;
+            raw_att.payload_size = cnt_non_empty_att(subatt_arr);
             raw_att.payload = LcsfRawAttPayload::SubattArr(Vec::new());
         };
     } else {
@@ -311,10 +333,6 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
     // Split data and sub-attribute cases
     if att_desc.data_type == LcsfDataType::Subattributes {
         if let LcsfValidAttPayload::SubattArr(valid_subatt_arr) = &valid_att.payload {
-            // Check sub-attribute number
-            if valid_subatt_arr.len() != att_desc.subatt_desc_arr.len() {
-                return None;
-            }
             // Check missing attribute
             if valid_subatt_arr.is_empty() {
                 // Check if mandatory
@@ -323,6 +341,10 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
                 } else {
                     return Some(raw_att);
                 }
+            }
+            // Check sub-attribute number
+            if valid_subatt_arr.len() != att_desc.subatt_desc_arr.len() {
+                return None;
             }
             // Fill raw att header
             raw_att = fill_att_info(att_desc.data_type, valid_att)?;
@@ -368,7 +390,7 @@ pub fn encode_valid(
     let mut raw_msg = LcsfRawMsg {
         prot_id,
         cmd_id: valid_cmd.cmd_id,
-        att_nb: valid_cmd.att_arr.len() as u16,
+        att_nb: cnt_non_empty_att(&valid_cmd.att_arr),
         att_arr: Vec::new(),
     };
     // Check attribute number

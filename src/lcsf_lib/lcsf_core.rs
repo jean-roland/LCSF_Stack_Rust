@@ -159,7 +159,6 @@ impl LcsfCore {
         let cmd_desc_map: HashMap<u16, LcsfCmdDesc> =
             prot_desc.cmd_desc_arr.iter().cloned().collect();
         let cmd_desc = cmd_desc_map.get(&valid_cmd.cmd_id).unwrap();
-
         let raw_msg = lcsf_validator::encode_valid(prot_id, cmd_desc, valid_cmd).unwrap();
         let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg);
         // Send buffer
