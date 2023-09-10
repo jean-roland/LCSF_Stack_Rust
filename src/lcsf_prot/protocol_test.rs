@@ -508,7 +508,7 @@ pub fn init_core(core: &mut LcsfCore) {
 ///
 /// valid_cmd: received valid command
 fn process_cmd(valid_cmd: &LcsfValidCmd) {
-    let (mut cmd_name, mut cmd_payload) = lcsf_protocol_test::receive_cmd(&valid_cmd);
+    let (mut cmd_name, mut cmd_payload) = lcsf_protocol_test::receive_cmd(valid_cmd);
     (cmd_name, cmd_payload) = execute_cmd(cmd_name, &cmd_payload);
     let valid_cmd = lcsf_protocol_test::send_cmd(cmd_name, &cmd_payload);
     packet::prot_send_cmd(lcsf_protocol_test::PROT_ID, &valid_cmd);
