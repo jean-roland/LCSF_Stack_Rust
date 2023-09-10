@@ -925,7 +925,7 @@ lazy_static! {
             (CC3_ATT_ID_SA7, LcsfAttDesc { is_optional: true,  data_type: LcsfDataType::Uint16, subatt_desc_arr: Vec::new()}),
             (CC3_ATT_ID_SA8, LcsfAttDesc { is_optional: true,  data_type: LcsfDataType::Uint32, subatt_desc_arr: Vec::new()}),
             (CC3_ATT_ID_SA9, LcsfAttDesc { is_optional: true,  data_type: LcsfDataType::ByteArray, subatt_desc_arr: Vec::new()}),
-            (CC3_ATT_ID_SA1, LcsfAttDesc { is_optional: true,  data_type: LcsfDataType::String, subatt_desc_arr: Vec::new()}),
+            (CC3_ATT_ID_SA10, LcsfAttDesc { is_optional: true,  data_type: LcsfDataType::String, subatt_desc_arr: Vec::new()}),
         ]}),
         (CMD_ID_CC4, LcsfCmdDesc {att_desc_arr: vec![
             (CC4_ATT_ID_SA1, LcsfAttDesc { is_optional: false, data_type:LcsfDataType::Uint8, subatt_desc_arr: Vec::new()}),
@@ -1011,6 +1011,23 @@ mod tests {
             sa9: vec![1, 2, 3, 4, 5],
             sa10: String::from("Paul"),
         };
+        let cc3_payload = Cc3AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: true,
+            is_sa8_here: true,
+            is_sa9_here: false,
+            is_sa10_here: true,
+            sa1: 0,
+            sa2: 2000,
+            sa3: 100000,
+            sa4: vec![5, 4, 3, 2, 1],
+            sa5: String::from("Bob"),
+            sa6: 3,
+            sa7: 4000,
+            sa8: 149999,
+            sa9: Vec::new(),
+            sa10: String::from("Paul"),
+        };
         let cc5_payload = Cc5AttPayload {
             is_ca6_here: true,
             sa2: 255,
@@ -1032,8 +1049,33 @@ mod tests {
                 },
             },
         };
+        let cc6_payload = Cc6AttPayload {
+            is_ca10_here: true,
+            sa4: vec![3, 3],
+            ca9_payload: Cc6AttCa9Payload {
+                is_sa3_here: false,
+                sa1: 1,
+                sa2: 2000,
+                sa3: 0,
+            },
+            ca10_payload: Cc6AttCa10Payload {
+                is_sa1_here: false,
+                sa1: 0,
+                ca11_payload: Ca10AttCa11Payload {
+                    is_sa1_here: true,
+                    sa1: 3,
+                    ca12_payload: Ca11AttCa12Payload {
+                        sa4: vec![5, 5, 5, 5, 5],
+                    },
+                },
+            },
+        };
         let valid_sc2_cmd = LcsfValidCmd {
             cmd_id: CMD_ID_SC2,
+            att_arr: Vec::new(),
+        };
+        let valid_sc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC3,
             att_arr: Vec::new(),
         };
         let valid_cc2_cmd = LcsfValidCmd {
@@ -1065,6 +1107,41 @@ mod tests {
                 },
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![1, 2, 3, 4, 5]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c]),
+                },
+            ],
+        };
+        let valid_cc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC3,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x86, 0x01, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![5, 4, 3, 2, 1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x42, 0x6f, 0x62]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x0f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xef, 0x49, 0x02, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
                 },
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c]),
@@ -1113,15 +1190,64 @@ mod tests {
                 },
             ],
         };
+        let valid_cc6_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC6,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3, 3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![1]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![3]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![5, 5, 5, 5, 5]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
         let (mut cmd_name, mut payload) = receive_cmd(&valid_sc2_cmd);
         assert_eq!(cmd_name, CmdEnum::SC2);
+        assert_eq!(payload, CmdPayload::Empty);
+        (cmd_name, payload) = receive_cmd(&valid_sc3_cmd);
+        assert_eq!(cmd_name, CmdEnum::SC3);
         assert_eq!(payload, CmdPayload::Empty);
         (cmd_name, payload) = receive_cmd(&valid_cc2_cmd);
         assert_eq!(cmd_name, CmdEnum::CC2);
         assert_eq!(payload, CmdPayload::Cc2Payload(cc2_payload));
+        (cmd_name, payload) = receive_cmd(&valid_cc3_cmd);
+        assert_eq!(cmd_name, CmdEnum::CC3);
+        assert_eq!(payload, CmdPayload::Cc3Payload(cc3_payload));
         (cmd_name, payload) = receive_cmd(&valid_cc5_cmd);
         assert_eq!(cmd_name, CmdEnum::CC5);
         assert_eq!(payload, CmdPayload::Cc5Payload(cc5_payload));
+        (cmd_name, payload) = receive_cmd(&valid_cc6_cmd);
+        assert_eq!(cmd_name, CmdEnum::CC6);
+        assert_eq!(payload, CmdPayload::Cc6Payload(cc6_payload));
     }
 
     #[test]
@@ -1142,6 +1268,23 @@ mod tests {
             sa8: 150000,
             sa9: vec![2, 3, 4, 5, 6],
             sa10: String::from("Qbvm"),
+        };
+        let cc3_payload = Cc3AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: true,
+            is_sa8_here: true,
+            is_sa9_here: false,
+            is_sa10_here: true,
+            sa1: 0,
+            sa2: 2000,
+            sa3: 100000,
+            sa4: vec![5, 4, 3, 2, 1],
+            sa5: String::from("Bob"),
+            sa6: 3,
+            sa7: 4000,
+            sa8: 149999,
+            sa9: Vec::new(),
+            sa10: String::from("Paul"),
         };
         let cc4_payload = Cc4AttPayload {
             is_ca2_here: true,
@@ -1164,8 +1307,33 @@ mod tests {
                 },
             },
         };
+        let cc6_payload = Cc6AttPayload {
+            is_ca10_here: true,
+            sa4: vec![3, 3],
+            ca9_payload: Cc6AttCa9Payload {
+                is_sa3_here: false,
+                sa1: 1,
+                sa2: 2000,
+                sa3: 0,
+            },
+            ca10_payload: Cc6AttCa10Payload {
+                is_sa1_here: false,
+                sa1: 0,
+                ca11_payload: Ca10AttCa11Payload {
+                    is_sa1_here: true,
+                    sa1: 3,
+                    ca12_payload: Ca11AttCa12Payload {
+                        sa4: vec![5, 5, 5, 5, 5],
+                    },
+                },
+            },
+        };
         let valid_sc1_cmd = LcsfValidCmd {
             cmd_id: CMD_ID_SC1,
+            att_arr: Vec::new(),
+        };
+        let valid_sc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC3,
             att_arr: Vec::new(),
         };
         let valid_cc1_cmd = LcsfValidCmd {
@@ -1200,6 +1368,41 @@ mod tests {
                 },
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x51, 0x62, 0x76, 0x6d]),
+                },
+            ],
+        };
+        let valid_cc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC3,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x86, 0x01, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![5, 4, 3, 2, 1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x42, 0x6f, 0x62]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x0f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xef, 0x49, 0x02, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c]),
                 },
             ],
         };
@@ -1245,11 +1448,57 @@ mod tests {
                 },
             ],
         };
+        let valid_cc6_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC6,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3, 3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![1]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![3]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![5, 5, 5, 5, 5]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
         let mut valid_cmd = send_cmd(CmdEnum::SC1, &CmdPayload::Empty);
         assert_eq!(valid_cmd, valid_sc1_cmd);
+        valid_cmd = send_cmd(CmdEnum::SC3, &CmdPayload::Empty);
+        assert_eq!(valid_cmd, valid_sc3_cmd);
         valid_cmd = send_cmd(CmdEnum::CC1, &CmdPayload::Cc1Payload(cc1_payload));
         assert_eq!(valid_cmd, valid_cc1_cmd);
+        valid_cmd = send_cmd(CmdEnum::CC3, &CmdPayload::Cc3Payload(cc3_payload));
+        assert_eq!(valid_cmd, valid_cc3_cmd);
         valid_cmd = send_cmd(CmdEnum::CC4, &CmdPayload::Cc4Payload(cc4_payload));
         assert_eq!(valid_cmd, valid_cc4_cmd);
+        valid_cmd = send_cmd(CmdEnum::CC6, &CmdPayload::Cc6Payload(cc6_payload));
+        assert_eq!(valid_cmd, valid_cc6_cmd);
     }
 }
