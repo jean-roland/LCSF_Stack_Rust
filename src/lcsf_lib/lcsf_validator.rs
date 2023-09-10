@@ -217,9 +217,18 @@ pub fn validate_msg(
         return Err(LcsfValidateErrorEnum::TooManyAtt);
     }
     // Validate attributes
+    let mut att_count = 0;
     for (att_id, att_desc) in &cmd_desc.att_desc_arr {
-        let (_, valid_att) = validate_att_rec(*att_id, att_desc, &rx_msg.att_arr)?;
+        let (att_size, valid_att) = validate_att_rec(*att_id, att_desc, &rx_msg.att_arr)?;
         valid_cmd.att_arr.push(valid_att);
+        // Count attribute presence
+        if att_size > 0 {
+            att_count += 1;
+        }
+    }
+    // Unrecognized attribute case
+    if att_count < valid_cmd.att_arr.len() {
+        return Err(LcsfValidateErrorEnum::UnknownAttId);
     }
     Ok((valid_cmd, rx_msg.prot_id))
 }
