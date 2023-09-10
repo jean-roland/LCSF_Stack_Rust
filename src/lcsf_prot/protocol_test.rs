@@ -308,8 +308,8 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
     }
     // // Process data
     let mut send_payload = Cc3AttPayload {
-        sa1: sa1 + 1,
-        sa2: sa2 + 1,
+        sa1: (sa1 as u16 + 1) as u8,
+        sa2: (sa2 as u32 + 1) as u16,
         sa3: sa3 + 1,
         sa4: Vec::new(),
         sa5: CString::new("").unwrap(),
@@ -319,7 +319,7 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
         is_sa9_here: payload.is_sa9_here,
         is_sa10_here: payload.is_sa10_here,
         sa6: sa6 + 1,
-        sa7: sa7 + 1,
+        sa7: (sa7 as u32 + 1) as u16,
         sa8: sa8 + 1,
         sa9: Vec::new(),
         sa10: CString::new("").unwrap(),
@@ -333,7 +333,7 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
 
     if payload.is_sa9_here {
         for byte in sa9 {
-            send_payload.sa9.push(*byte + 1);
+            send_payload.sa9.push((*byte as u16 + 1) as u8);
         }
     }
     if payload.is_sa10_here {
