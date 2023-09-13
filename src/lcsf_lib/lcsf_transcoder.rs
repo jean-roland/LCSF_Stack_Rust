@@ -77,26 +77,29 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
         att_arr: Vec::new(),
     };
     // Parse the message header based on the lcsf_mode
-    if lcsf_mode == LcsfModeEnum::Small {
-        // Byte 1: Protocol id
-        msg.prot_id = *buff_iter.next()? as u16;
-        // Byte 2: Command id
-        msg.cmd_id = *buff_iter.next()? as u16;
-        // Byte 3: Attribute number
-        msg.att_nb = *buff_iter.next()? as u16;
-    } else {
-        // Byte 1: Protocol id LSB
-        msg.prot_id = *buff_iter.next()? as u16;
-        // Byte 2: Protocol id MSB
-        msg.prot_id += (*buff_iter.next()? as u16) << 8;
-        // Byte 3: Command id LSB
-        msg.cmd_id = *buff_iter.next()? as u16;
-        // Byte 4: Command id MSB
-        msg.cmd_id += (*buff_iter.next()? as u16) << 8;
-        // Byte 5: Attribute Number LSB
-        msg.att_nb = *buff_iter.next()? as u16;
-        // Byte 6: Attribute Number MSB
-        msg.att_nb += (*buff_iter.next()? as u16) << 8;
+    match lcsf_mode {
+        LcsfModeEnum::Small => {
+            // Byte 1: Protocol id
+            msg.prot_id = *buff_iter.next()? as u16;
+            // Byte 2: Command id
+            msg.cmd_id = *buff_iter.next()? as u16;
+            // Byte 3: Attribute number
+            msg.att_nb = *buff_iter.next()? as u16;
+        }
+        LcsfModeEnum::Normal => {
+            // Byte 1: Protocol id LSB
+            msg.prot_id = *buff_iter.next()? as u16;
+            // Byte 2: Protocol id MSB
+            msg.prot_id += (*buff_iter.next()? as u16) << 8;
+            // Byte 3: Command id LSB
+            msg.cmd_id = *buff_iter.next()? as u16;
+            // Byte 4: Command id MSB
+            msg.cmd_id += (*buff_iter.next()? as u16) << 8;
+            // Byte 5: Attribute Number LSB
+            msg.att_nb = *buff_iter.next()? as u16;
+            // Byte 6: Attribute Number MSB
+            msg.att_nb += (*buff_iter.next()? as u16) << 8;
+        }
     }
     Some(msg)
 }
@@ -117,24 +120,27 @@ fn fetch_att_header(
     };
     let mut att_id: u16;
     // Parse the protocol id and command id based on the lcsf_mode
-    if lcsf_mode == LcsfModeEnum::Small {
-        // Byte 1: Attribute id + Sub-attribute flag (MSb)
-        let byte1 = *buff_iter.next()? as u16;
-        att.has_subatt = (byte1 & (1 << 7)) != 0; // Retrieve the flag
-        att_id = byte1 & !(1 << 7); // Mask the flag from the id
-                                    // Byte 2: Payload size
-        att.payload_size = *buff_iter.next()? as u16;
-    } else {
-        // Byte 1: Attribute id LSB
-        att_id = *buff_iter.next()? as u16;
-        // Byte 2: Attribute id MSB + Sub-attribute flag (MSb)
-        let byte2 = *buff_iter.next()? as u16;
-        att.has_subatt = (byte2 & (1 << 7)) != 0; // Retrieve the flag
-        att_id += (byte2 & !(1 << 7)) << 8; // Mask the flag from the id
-                                            // Byte 3: Payload size LSB
-        att.payload_size = *buff_iter.next()? as u16;
-        // Byte 4: Payload size MSB
-        att.payload_size += (*buff_iter.next()? as u16) << 8;
+    match lcsf_mode {
+        LcsfModeEnum::Small => {
+            // Byte 1: Attribute id + Sub-attribute flag (MSb)
+            let byte1 = *buff_iter.next()? as u16;
+            att.has_subatt = (byte1 & (1 << 7)) != 0; // Retrieve the flag
+            att_id = byte1 & !(1 << 7); // Mask the flag from the id
+                                        // Byte 2: Payload size
+            att.payload_size = *buff_iter.next()? as u16;
+        }
+        LcsfModeEnum::Normal => {
+            // Byte 1: Attribute id LSB
+            att_id = *buff_iter.next()? as u16;
+            // Byte 2: Attribute id MSB + Sub-attribute flag (MSb)
+            let byte2 = *buff_iter.next()? as u16;
+            att.has_subatt = (byte2 & (1 << 7)) != 0; // Retrieve the flag
+            att_id += (byte2 & !(1 << 7)) << 8; // Mask the flag from the id
+                                                // Byte 3: Payload size LSB
+            att.payload_size = *buff_iter.next()? as u16;
+            // Byte 4: Payload size MSB
+            att.payload_size += (*buff_iter.next()? as u16) << 8;
+        }
     }
     Some((att_id, att))
 }
@@ -217,26 +223,29 @@ pub fn decode_buff(
 fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 
-    if lcsf_mode == LcsfModeEnum::Small {
-        // Byte 1: Protocol id
-        buffer.push(msg.prot_id as u8);
-        // Byte 2: Command id
-        buffer.push(msg.cmd_id as u8);
-        // Byte 3: Attribute number
-        buffer.push(msg.att_nb as u8);
-    } else {
-        // Byte 1: Protocol id LSB
-        buffer.push(msg.prot_id as u8);
-        // Byte 2: Protocol id MSB
-        buffer.push((msg.prot_id >> 8) as u8);
-        // Byte 3: Command id LSB
-        buffer.push(msg.cmd_id as u8);
-        // Byte 4: Command id MSB
-        buffer.push((msg.cmd_id >> 8) as u8);
-        // Byte 5: Attribute number LSB
-        buffer.push(msg.att_nb as u8);
-        // Byte 6: Attribute number MSB
-        buffer.push((msg.att_nb >> 8) as u8);
+    match lcsf_mode {
+        LcsfModeEnum::Small => {
+            // Byte 1: Protocol id
+            buffer.push(msg.prot_id as u8);
+            // Byte 2: Command id
+            buffer.push(msg.cmd_id as u8);
+            // Byte 3: Attribute number
+            buffer.push(msg.att_nb as u8);
+        }
+        LcsfModeEnum::Normal => {
+            // Byte 1: Protocol id LSB
+            buffer.push(msg.prot_id as u8);
+            // Byte 2: Protocol id MSB
+            buffer.push((msg.prot_id >> 8) as u8);
+            // Byte 3: Command id LSB
+            buffer.push(msg.cmd_id as u8);
+            // Byte 4: Command id MSB
+            buffer.push((msg.cmd_id >> 8) as u8);
+            // Byte 5: Attribute number LSB
+            buffer.push(msg.att_nb as u8);
+            // Byte 6: Attribute number MSB
+            buffer.push((msg.att_nb >> 8) as u8);
+        }
     }
     buffer
 }
@@ -251,32 +260,35 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
 fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Vec<u8> {
     let mut buffer: Vec<u8> = Vec::new();
 
-    if lcsf_mode == LcsfModeEnum::Small {
-        // Check if attribute has sub-attributes
-        if att.has_subatt {
-            // Byte 1: Attribute id + MSb at 1
-            buffer.push((att_id | 0x80) as u8);
-        } else {
-            // Byte 1: Attribute id + MSb at 0
-            buffer.push((att_id & 0x7F) as u8);
+    match lcsf_mode {
+        LcsfModeEnum::Small => {
+            // Check if attribute has sub-attributes
+            if att.has_subatt {
+                // Byte 1: Attribute id + MSb at 1
+                buffer.push((att_id | 0x80) as u8);
+            } else {
+                // Byte 1: Attribute id + MSb at 0
+                buffer.push((att_id & 0x7F) as u8);
+            }
+            // Byte 2: Attribute data size or sub-attribute number
+            buffer.push(att.payload_size as u8);
         }
-        // Byte 2: Attribute data size or sub-attribute number
-        buffer.push(att.payload_size as u8);
-    } else {
-        // Byte 1: Attribute id LSB
-        buffer.push(att_id as u8);
-        // Check if attribute has sub-attributes
-        if att.has_subatt {
-            // Byte 2: Attribute id MSB + MSb at 1
-            buffer.push(((att_id >> 8) | 0x80) as u8);
-        } else {
-            // Byte 2: Attribute id MSB + MSb at 0
-            buffer.push(((att_id >> 8) & 0x7F) as u8);
+        LcsfModeEnum::Normal => {
+            // Byte 1: Attribute id LSB
+            buffer.push(att_id as u8);
+            // Check if attribute has sub-attributes
+            if att.has_subatt {
+                // Byte 2: Attribute id MSB + MSb at 1
+                buffer.push(((att_id >> 8) | 0x80) as u8);
+            } else {
+                // Byte 2: Attribute id MSB + MSb at 0
+                buffer.push(((att_id >> 8) & 0x7F) as u8);
+            }
+            // Byte 3: Attribute data size or sub-attribute number LSB
+            buffer.push(att.payload_size as u8);
+            // Byte 4: Attribute data size or sub-attribute number MSB
+            buffer.push((att.payload_size >> 8) as u8);
         }
-        // Byte 3: Attribute data size or sub-attribute number LSB
-        buffer.push(att.payload_size as u8);
-        // Byte 4: Attribute data size or sub-attribute number MSB
-        buffer.push((att.payload_size >> 8) as u8);
     }
     buffer
 }

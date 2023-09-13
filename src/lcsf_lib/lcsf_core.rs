@@ -63,7 +63,7 @@ impl LcsfCore {
     pub fn new(mode: LcsfModeEnum, send_cb: SendCallback, do_gen_err: bool) -> Self {
         let err_prot_id = match mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
-            _ => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
+            LcsfModeEnum::Normal => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
         };
         LcsfCore {
             do_gen_err,
@@ -81,7 +81,7 @@ impl LcsfCore {
     pub fn update_err_cb(&mut self, new_err_cb: ProtCallback) {
         let err_prot_id = match self.lcsf_mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
-            _ => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
+            LcsfModeEnum::Normal => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
         };
         self.prot_cb_map.insert(err_prot_id, new_err_cb);
     }
