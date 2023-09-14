@@ -1,7 +1,15 @@
 [package]
 name = "lcsf_stack_rust"
 version = "0.1.0"
+authors = ["Jean-Roland Gosse <jean.roland.gosse@gmail.com>"]
 edition = "2021"
+license = "LGPL-2.1-only"
+description = "A Rust implementation of the LCSF Stack"
+readme = "README.md"
+homepage = "https://jean-roland.github.io/LCSF_Doc/"
+repository = "https://github.com/jean-roland/LCSF_Stack_Rust"
+keywords = ["command set", "protocol", "lcsf"]
+categories = ["network-programming", "parser-implementations"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
