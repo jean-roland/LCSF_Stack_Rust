@@ -100,7 +100,7 @@ fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
         LcsfDataType::Uint32 => data_size == size_of::<u32>(),
         LcsfDataType::ByteArray => data_size > 0,
         LcsfDataType::String => data_size > 0,
-        _ => false,
+        LcsfDataType::Subattributes => false,
     }
 }
 
@@ -308,7 +308,7 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
                         return None;
                     }
                 }
-                _ => return None,
+                LcsfDataType::Subattributes => return None,
             }
             // Note data
             raw_att.payload_size = data.len() as u16;
