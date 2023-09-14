@@ -33,30 +33,30 @@ use protocol_test::CmdPayload;
 /// Convert command name to lcsf command id
 fn cmd_name_to_id(cmd_name: CmdEnum) -> u16 {
     match cmd_name {
-        CmdEnum::SC1 => CMD_ID_SC1,
-        CmdEnum::SC2 => CMD_ID_SC2,
-        CmdEnum::SC3 => CMD_ID_SC3,
-        CmdEnum::CC1 => CMD_ID_CC1,
-        CmdEnum::CC2 => CMD_ID_CC2,
-        CmdEnum::CC3 => CMD_ID_CC3,
-        CmdEnum::CC4 => CMD_ID_CC4,
-        CmdEnum::CC5 => CMD_ID_CC5,
-        CmdEnum::CC6 => CMD_ID_CC6,
+        CmdEnum::Sc1 => CMD_ID_SC1,
+        CmdEnum::Sc2 => CMD_ID_SC2,
+        CmdEnum::Sc3 => CMD_ID_SC3,
+        CmdEnum::Cc1 => CMD_ID_CC1,
+        CmdEnum::Cc2 => CMD_ID_CC2,
+        CmdEnum::Cc3 => CMD_ID_CC3,
+        CmdEnum::Cc4 => CMD_ID_CC4,
+        CmdEnum::Cc5 => CMD_ID_CC5,
+        CmdEnum::Cc6 => CMD_ID_CC6,
     }
 }
 
 /// Convert lcsf command id to command name
 fn cmd_id_to_name(cmd_id: u16) -> CmdEnum {
     match cmd_id {
-        CMD_ID_SC1 => CmdEnum::SC1,
-        CMD_ID_SC2 => CmdEnum::SC2,
-        CMD_ID_SC3 => CmdEnum::SC3,
-        CMD_ID_CC1 => CmdEnum::CC1,
-        CMD_ID_CC2 => CmdEnum::CC2,
-        CMD_ID_CC3 => CmdEnum::CC3,
-        CMD_ID_CC4 => CmdEnum::CC4,
-        CMD_ID_CC5 => CmdEnum::CC5,
-        CMD_ID_CC6 => CmdEnum::CC6,
+        CMD_ID_SC1 => CmdEnum::Sc1,
+        CMD_ID_SC2 => CmdEnum::Sc2,
+        CMD_ID_SC3 => CmdEnum::Sc3,
+        CMD_ID_CC1 => CmdEnum::Cc1,
+        CMD_ID_CC2 => CmdEnum::Cc2,
+        CMD_ID_CC3 => CmdEnum::Cc3,
+        CMD_ID_CC4 => CmdEnum::Cc4,
+        CMD_ID_CC5 => CmdEnum::Cc5,
+        CMD_ID_CC6 => CmdEnum::Cc6,
         _ => panic!("Unreachable values"),
     }
 }
@@ -408,11 +408,15 @@ fn cc6_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
 pub fn receive_cmd(valid_cmd: &LcsfValidCmd) -> (CmdEnum, CmdPayload) {
     let cmd_name = cmd_id_to_name(valid_cmd.cmd_id);
     let cmd_payload = match cmd_name {
-        CmdEnum::CC2 => cc2_get_data(&valid_cmd.att_arr),
-        CmdEnum::CC3 => cc3_get_data(&valid_cmd.att_arr),
-        CmdEnum::CC5 => cc5_get_data(&valid_cmd.att_arr),
-        CmdEnum::CC6 => cc6_get_data(&valid_cmd.att_arr),
-        _ => CmdPayload::Empty,
+        CmdEnum::Sc1 => CmdPayload::Empty,
+        CmdEnum::Sc2 => CmdPayload::Empty,
+        CmdEnum::Sc3 => CmdPayload::Empty,
+        CmdEnum::Cc1 => CmdPayload::Empty,
+        CmdEnum::Cc2 => cc2_get_data(&valid_cmd.att_arr),
+        CmdEnum::Cc3 => cc3_get_data(&valid_cmd.att_arr),
+        CmdEnum::Cc4 => CmdPayload::Empty,
+        CmdEnum::Cc5 => cc5_get_data(&valid_cmd.att_arr),
+        CmdEnum::Cc6 => cc6_get_data(&valid_cmd.att_arr),
     };
     (cmd_name, cmd_payload)
 }
@@ -761,11 +765,15 @@ pub fn send_cmd(cmd_name: CmdEnum, cmd_payload: &CmdPayload) -> LcsfValidCmd {
         att_arr: Vec::new(),
     };
     match cmd_name {
-        CmdEnum::CC1 => send_cmd.att_arr = cc1_fill_att(cmd_payload),
-        CmdEnum::CC3 => send_cmd.att_arr = cc3_fill_att(cmd_payload),
-        CmdEnum::CC4 => send_cmd.att_arr = cc4_fill_att(cmd_payload),
-        CmdEnum::CC6 => send_cmd.att_arr = cc6_fill_att(cmd_payload),
-        _ => {}
+        CmdEnum::Sc1 => {}
+        CmdEnum::Sc2 => {}
+        CmdEnum::Sc3 => {}
+        CmdEnum::Cc1 => send_cmd.att_arr = cc1_fill_att(cmd_payload),
+        CmdEnum::Cc2 => {}
+        CmdEnum::Cc3 => send_cmd.att_arr = cc3_fill_att(cmd_payload),
+        CmdEnum::Cc4 => send_cmd.att_arr = cc4_fill_att(cmd_payload),
+        CmdEnum::Cc5 => {}
+        CmdEnum::Cc6 => send_cmd.att_arr = cc6_fill_att(cmd_payload),
     }
     send_cmd
 }
@@ -1231,22 +1239,22 @@ mod tests {
             ],
         };
         let (mut cmd_name, mut payload) = receive_cmd(&valid_sc2_cmd);
-        assert_eq!(cmd_name, CmdEnum::SC2);
+        assert_eq!(cmd_name, CmdEnum::Sc2);
         assert_eq!(payload, CmdPayload::Empty);
         (cmd_name, payload) = receive_cmd(&valid_sc3_cmd);
-        assert_eq!(cmd_name, CmdEnum::SC3);
+        assert_eq!(cmd_name, CmdEnum::Sc3);
         assert_eq!(payload, CmdPayload::Empty);
         (cmd_name, payload) = receive_cmd(&valid_cc2_cmd);
-        assert_eq!(cmd_name, CmdEnum::CC2);
+        assert_eq!(cmd_name, CmdEnum::Cc2);
         assert_eq!(payload, CmdPayload::Cc2Payload(cc2_payload));
         (cmd_name, payload) = receive_cmd(&valid_cc3_cmd);
-        assert_eq!(cmd_name, CmdEnum::CC3);
+        assert_eq!(cmd_name, CmdEnum::Cc3);
         assert_eq!(payload, CmdPayload::Cc3Payload(cc3_payload));
         (cmd_name, payload) = receive_cmd(&valid_cc5_cmd);
-        assert_eq!(cmd_name, CmdEnum::CC5);
+        assert_eq!(cmd_name, CmdEnum::Cc5);
         assert_eq!(payload, CmdPayload::Cc5Payload(cc5_payload));
         (cmd_name, payload) = receive_cmd(&valid_cc6_cmd);
-        assert_eq!(cmd_name, CmdEnum::CC6);
+        assert_eq!(cmd_name, CmdEnum::Cc6);
         assert_eq!(payload, CmdPayload::Cc6Payload(cc6_payload));
     }
 
@@ -1488,17 +1496,17 @@ mod tests {
                 },
             ],
         };
-        let mut valid_cmd = send_cmd(CmdEnum::SC1, &CmdPayload::Empty);
+        let mut valid_cmd = send_cmd(CmdEnum::Sc1, &CmdPayload::Empty);
         assert_eq!(valid_cmd, valid_sc1_cmd);
-        valid_cmd = send_cmd(CmdEnum::SC3, &CmdPayload::Empty);
+        valid_cmd = send_cmd(CmdEnum::Sc3, &CmdPayload::Empty);
         assert_eq!(valid_cmd, valid_sc3_cmd);
-        valid_cmd = send_cmd(CmdEnum::CC1, &CmdPayload::Cc1Payload(cc1_payload));
+        valid_cmd = send_cmd(CmdEnum::Cc1, &CmdPayload::Cc1Payload(cc1_payload));
         assert_eq!(valid_cmd, valid_cc1_cmd);
-        valid_cmd = send_cmd(CmdEnum::CC3, &CmdPayload::Cc3Payload(cc3_payload));
+        valid_cmd = send_cmd(CmdEnum::Cc3, &CmdPayload::Cc3Payload(cc3_payload));
         assert_eq!(valid_cmd, valid_cc3_cmd);
-        valid_cmd = send_cmd(CmdEnum::CC4, &CmdPayload::Cc4Payload(cc4_payload));
+        valid_cmd = send_cmd(CmdEnum::Cc4, &CmdPayload::Cc4Payload(cc4_payload));
         assert_eq!(valid_cmd, valid_cc4_cmd);
-        valid_cmd = send_cmd(CmdEnum::CC6, &CmdPayload::Cc6Payload(cc6_payload));
+        valid_cmd = send_cmd(CmdEnum::Cc6, &CmdPayload::Cc6Payload(cc6_payload));
         assert_eq!(valid_cmd, valid_cc6_cmd);
     }
 }

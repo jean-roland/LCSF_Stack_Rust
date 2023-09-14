@@ -15,15 +15,15 @@ use std::ffi::CString;
 /// Command enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum CmdEnum {
-    SC1,
-    SC2,
-    SC3,
-    CC1,
-    CC2,
-    CC3,
-    CC4,
-    CC5,
-    CC6,
+    Sc1,
+    Sc2,
+    Sc3,
+    Cc1,
+    Cc2,
+    Cc3,
+    Cc4,
+    Cc5,
+    Cc6,
 }
 
 /// Command payload union
@@ -205,12 +205,12 @@ pub struct Ca11AttCa12Payload {
 // Command execution functions, customize as you need
 fn execute_sc2() -> (CmdEnum, CmdPayload) {
     // Send sc1
-    (CmdEnum::SC1, CmdPayload::Empty)
+    (CmdEnum::Sc1, CmdPayload::Empty)
 }
 
 fn execute_sc3() -> (CmdEnum, CmdPayload) {
     // Send sc3
-    (CmdEnum::SC3, CmdPayload::Empty)
+    (CmdEnum::Sc3, CmdPayload::Empty)
 }
 
 fn execute_cc2(payload: &Cc2AttPayload) -> (CmdEnum, CmdPayload) {
@@ -276,7 +276,7 @@ fn execute_cc2(payload: &Cc2AttPayload) -> (CmdEnum, CmdPayload) {
         send_payload.sa10 = CString::new(tmp_str).unwrap();
     }
     // Send cc1
-    (CmdEnum::CC1, CmdPayload::Cc1Payload(send_payload))
+    (CmdEnum::Cc1, CmdPayload::Cc1Payload(send_payload))
 }
 
 fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
@@ -342,7 +342,7 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
         send_payload.sa10 = CString::new(tmp_str).unwrap();
     }
     // Send CC3
-    (CmdEnum::CC3, CmdPayload::Cc3Payload(send_payload))
+    (CmdEnum::Cc3, CmdPayload::Cc3Payload(send_payload))
 }
 
 fn execute_cc5(payload: &Cc5AttPayload) -> (CmdEnum, CmdPayload) {
@@ -397,7 +397,7 @@ fn execute_cc5(payload: &Cc5AttPayload) -> (CmdEnum, CmdPayload) {
         }
     }
     // Send CC4
-    (CmdEnum::CC4, CmdPayload::Cc4Payload(send_payload))
+    (CmdEnum::Cc4, CmdPayload::Cc4Payload(send_payload))
 }
 
 fn execute_cc6(payload: &Cc6AttPayload) -> (CmdEnum, CmdPayload) {
@@ -455,7 +455,7 @@ fn execute_cc6(payload: &Cc6AttPayload) -> (CmdEnum, CmdPayload) {
         }
     }
     // Send CC6
-    (CmdEnum::CC6, CmdPayload::Cc6Payload(send_payload))
+    (CmdEnum::Cc6, CmdPayload::Cc6Payload(send_payload))
 }
 
 /// Execute a command, customize as needed
@@ -465,34 +465,31 @@ fn execute_cc6(payload: &Cc6AttPayload) -> (CmdEnum, CmdPayload) {
 /// cmd_payload: pointer to command payload
 fn execute_cmd(cmd_name: CmdEnum, cmd_payload: &CmdPayload) -> (CmdEnum, CmdPayload) {
     match cmd_name {
-        CmdEnum::SC2 => return execute_sc2(),
-        CmdEnum::SC3 => return execute_sc3(),
-        CmdEnum::CC2 => {
+        CmdEnum::Sc2 => return execute_sc2(),
+        CmdEnum::Sc3 => return execute_sc3(),
+        CmdEnum::Cc2 => {
             if let CmdPayload::Cc2Payload(payload) = cmd_payload {
                 return execute_cc2(payload);
             }
         }
-        CmdEnum::CC3 => {
+        CmdEnum::Cc3 => {
             if let CmdPayload::Cc3Payload(payload) = cmd_payload {
                 return execute_cc3(payload);
             }
         }
-        CmdEnum::CC5 => {
+        CmdEnum::Cc5 => {
             if let CmdPayload::Cc5Payload(payload) = cmd_payload {
                 return execute_cc5(payload);
             }
         }
-        CmdEnum::CC6 => {
+        CmdEnum::Cc6 => {
             if let CmdPayload::Cc6Payload(payload) = cmd_payload {
                 return execute_cc6(payload);
             }
         }
-        _ => {
-            // This case can be customized (e.g to send an error command)
-            todo!();
-        }
+        _ => {}
     }
-    (CmdEnum::SC1, CmdPayload::Empty)
+    (CmdEnum::Sc1, CmdPayload::Empty)
 }
 
 /// Init a LcsfCore with the protocol
@@ -681,28 +678,28 @@ mod tests {
             },
         };
         // Tests
-        let (mut cmd_name, mut cmd_payload) = execute_cmd(CmdEnum::SC2, &CmdPayload::Empty);
-        assert_eq!(cmd_name, CmdEnum::SC1);
+        let (mut cmd_name, mut cmd_payload) = execute_cmd(CmdEnum::Sc2, &CmdPayload::Empty);
+        assert_eq!(cmd_name, CmdEnum::Sc1);
         assert_eq!(cmd_payload, CmdPayload::Empty);
 
-        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::SC3, &CmdPayload::Empty);
-        assert_eq!(cmd_name, CmdEnum::SC3);
+        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Sc3, &CmdPayload::Empty);
+        assert_eq!(cmd_name, CmdEnum::Sc3);
         assert_eq!(cmd_payload, CmdPayload::Empty);
 
-        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::CC2, &CmdPayload::Cc2Payload(cc2_payload));
-        assert_eq!(cmd_name, CmdEnum::CC1);
+        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Cc2, &CmdPayload::Cc2Payload(cc2_payload));
+        assert_eq!(cmd_name, CmdEnum::Cc1);
         assert_eq!(cmd_payload, CmdPayload::Cc1Payload(cc1_payload));
 
-        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::CC3, &CmdPayload::Cc3Payload(cc3_payload));
-        assert_eq!(cmd_name, CmdEnum::CC3);
+        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Cc3, &CmdPayload::Cc3Payload(cc3_payload));
+        assert_eq!(cmd_name, CmdEnum::Cc3);
         assert_eq!(cmd_payload, CmdPayload::Cc3Payload(cc3u_payload));
 
-        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::CC5, &CmdPayload::Cc5Payload(cc5_payload));
-        assert_eq!(cmd_name, CmdEnum::CC4);
+        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Cc5, &CmdPayload::Cc5Payload(cc5_payload));
+        assert_eq!(cmd_name, CmdEnum::Cc4);
         assert_eq!(cmd_payload, CmdPayload::Cc4Payload(cc4_payload));
 
-        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::CC6, &CmdPayload::Cc6Payload(cc6_payload));
-        assert_eq!(cmd_name, CmdEnum::CC6);
+        (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Cc6, &CmdPayload::Cc6Payload(cc6_payload));
+        assert_eq!(cmd_name, CmdEnum::Cc6);
         assert_eq!(cmd_payload, CmdPayload::Cc6Payload(cc6u_payload));
     }
 }
