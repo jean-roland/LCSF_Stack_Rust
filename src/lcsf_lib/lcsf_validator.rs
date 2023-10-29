@@ -95,9 +95,9 @@ pub enum LcsfValidateErrorEnum {
 fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     // Check data type
     match data_type {
-        LcsfDataType::Uint8 => data_size == size_of::<u8>(),
-        LcsfDataType::Uint16 => data_size == size_of::<u16>(),
-        LcsfDataType::Uint32 => data_size == size_of::<u32>(),
+        LcsfDataType::Uint8 => data_size <= size_of::<u8>(),
+        LcsfDataType::Uint16 => data_size != 0 && data_size <= size_of::<u16>(),
+        LcsfDataType::Uint32 => data_size != 0 && data_size <= size_of::<u32>(),
         LcsfDataType::ByteArray => data_size > 0,
         LcsfDataType::String => data_size > 0,
         LcsfDataType::Subattributes => false,
@@ -257,6 +257,22 @@ fn cnt_non_empty_att(att_arr: &[LcsfValidAtt]) -> u16 {
     cnt
 }
 
+/// Check payload size validity for given data type
+///
+/// data_type: payload data type from descriptor
+///
+/// data: payload reference
+fn check_data_type(data_type: LcsfDataType, data: &[u8]) -> bool {
+    match data_type {
+        LcsfDataType::Uint8 => data.len() == std::mem::size_of::<u8>(),
+        LcsfDataType::Uint16 => !data.is_empty() && data.len() <= std::mem::size_of::<u16>(),
+        LcsfDataType::Uint32 => !data.is_empty() && data.len() <= std::mem::size_of::<u32>(),
+        LcsfDataType::ByteArray => !data.is_empty(),
+        LcsfDataType::String => !data.is_empty(),
+        LcsfDataType::Subattributes => false,
+    }
+}
+
 /// Fill a raw attribute info from a valid attribute
 ///
 /// data_type: attribute data type from descriptor
@@ -282,33 +298,8 @@ fn fill_att_info(data_type: LcsfDataType, valid_att: &LcsfValidAtt) -> Option<Lc
     } else {
         // Check other data types
         if let LcsfValidAttPayload::Data(data) = &valid_att.payload {
-            match data_type {
-                LcsfDataType::Uint8 => {
-                    if data.len() != std::mem::size_of::<u8>() {
-                        return None;
-                    }
-                }
-                LcsfDataType::Uint16 => {
-                    if data.len() != std::mem::size_of::<u16>() {
-                        return None;
-                    }
-                }
-                LcsfDataType::Uint32 => {
-                    if data.len() != std::mem::size_of::<u32>() {
-                        return None;
-                    }
-                }
-                LcsfDataType::ByteArray => {
-                    if data.is_empty() {
-                        return None;
-                    }
-                }
-                LcsfDataType::String => {
-                    if data.is_empty() {
-                        return None;
-                    }
-                }
-                LcsfDataType::Subattributes => return None,
+            if !check_data_type(data_type, data) {
+                return None;
             }
             // Note data
             raw_att.payload_size = data.len() as u16;
@@ -407,6 +398,37 @@ pub fn encode_valid(
     Some(raw_msg)
 }
 
+/// Encode an integer depending on its value
+///
+/// data: integer to encode
+pub fn vle_encode(data: u32) -> Vec<u8> {
+    if data <= 0x0000_00ff {
+        data.to_le_bytes()[0..1].to_vec()
+    } else if data <= 0x0000_ffff {
+        data.to_le_bytes()[0..2].to_vec()
+    } else if data <= 0x00ff_ffff {
+        data.to_le_bytes()[0..3].to_vec()
+    } else {
+        data.to_le_bytes().to_vec()
+    }
+}
+
+/// Decode a vector into an integer depending on its size
+///
+/// data: vector to decode
+pub fn vle_decode(data: &[u8]) -> u32 {
+    match data.len() {
+        1 => u8::from_le_bytes(data.try_into().unwrap()) as u32,
+        2 => u16::from_le_bytes(data.try_into().unwrap()) as u32,
+        3 => {
+            let mut tmp: [u8; 4] = [0; 4];
+            tmp[..3].copy_from_slice(data);
+            u32::from_le_bytes(tmp.try_into().unwrap())
+        }
+        _ => u32::from_le_bytes(data.try_into().unwrap()),
+    }
+}
+
 // *** Tests ***
 #[cfg(test)]
 mod tests {
@@ -415,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_validate_data_type() {
-        assert!(!validate_data_type(2, LcsfDataType::Uint32));
+        assert!(!validate_data_type(4, LcsfDataType::Uint16));
         assert!(validate_data_type(4, LcsfDataType::Uint32));
     }
 
@@ -425,8 +447,8 @@ mod tests {
             0x40,
             LcsfRawAtt {
                 has_subatt: false,
-                payload_size: 1,
-                payload: LcsfRawAttPayload::Data(vec![0x00]),
+                payload_size: 3,
+                payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02]),
             },
         )];
         let mut bad_att2 = vec![(
@@ -745,6 +767,40 @@ mod tests {
             None => panic!("encode_valid should not fail"),
             Some(raw_msg) => assert_eq!(raw_msg, *TEST_RAW_MSG),
         }
+    }
+
+    #[test]
+    fn test_vle_encode() {
+        for value in 0x00..0xff {
+            assert_eq!(vle_encode(value), vec![value as u8]);
+        }
+        for value in 0x0100..0xffff {
+            assert_eq!(vle_encode(value), vec![value as u8, (value >> 8) as u8]);
+        }
+        assert_eq!(vle_encode(0x0001_0000), vec![0x00, 0x00, 0x01]);
+        assert_eq!(vle_encode(0x0053_ab42), vec![0x42, 0xab, 0x53]); // arbitrary
+        assert_eq!(vle_encode(0x00ff_ffff), vec![0xff, 0xff, 0xff]);
+
+        assert_eq!(vle_encode(0x0100_0000), vec![0x00, 0x00, 0x00, 0x01]);
+        assert_eq!(vle_encode(0x18c4_d307), vec![0x07, 0xd3, 0xc4, 0x18]); // arbitrary
+        assert_eq!(vle_encode(0xffff_ffff), vec![0xff, 0xff, 0xff, 0xff]);
+    }
+
+    #[test]
+    fn test_vle_decode() {
+        for value in 0x00..0xff {
+            assert_eq!(vle_decode(&vec![value as u8]), value);
+        }
+        for value in 0x0100..0xffff {
+            assert_eq!(vle_decode(&vec![value as u8, (value >> 8) as u8]), value);
+        }
+        assert_eq!(vle_decode(&vec![0x00, 0x00, 0x01]), 0x0001_0000);
+        assert_eq!(vle_decode(&vec![0x42, 0xab, 0x53]), 0x0053_ab42); // arbitrary
+        assert_eq!(vle_decode(&vec![0xff, 0xff, 0xff]), 0x00ff_ffff);
+
+        assert_eq!(vle_decode(&vec![0x00, 0x00, 0x00, 0x01]), 0x0100_0000);
+        assert_eq!(vle_decode(&vec![0x07, 0xd3, 0xc4, 0x18]), 0x18c4_d307); // arbitrary
+        assert_eq!(vle_decode(&vec![0xff, 0xff, 0xff, 0xff]), 0xffff_ffff);
     }
 
     // Tests data
