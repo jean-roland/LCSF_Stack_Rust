@@ -15,6 +15,7 @@ use crate::lcsf_lib::lcsf_validator;
 use lcsf_error::LcsfEpLocEnum;
 use lcsf_error::LCSF_EP_PROT_DESC;
 use lcsf_transcoder::LcsfModeEnum;
+use lcsf_transcoder::LcsfRawMsg;
 use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidCmd;
@@ -164,6 +165,37 @@ impl LcsfCore {
         // Send buffer
         (self.fn_send)(&buff);
     }
+
+    /// Process an incoming lcsf message, when you want to bypass protocol handling
+    ///
+    /// buff: buffer reference
+    pub fn receive_raw(&self, buff: &[u8]) -> Option<LcsfRawMsg> {
+        // Send to transcoder
+        match lcsf_transcoder::decode_buff(self.lcsf_mode, buff) {
+            Err(err) => {
+                println!("decode_buff failed with err {err:?}");
+                if self.do_gen_err {
+                    // Generate and send error
+                    let buff = lcsf_error::encode_error(
+                        self.lcsf_mode,
+                        LcsfEpLocEnum::DecodeError,
+                        err as u8,
+                    );
+                    (self.fn_send)(&buff);
+                }
+                None
+            }
+            Ok(msg) => Some(msg),
+        }
+    }
+
+    /// Send a LcsfRawMsg, when you want to bypass protocol handling
+    ///
+    /// raw_msg: raw message reference
+    pub fn send_raw(&self, raw_msg: &LcsfRawMsg) {
+        let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, raw_msg);
+        (self.fn_send)(&buff);
+    }
 }
 
 #[cfg(test)]
@@ -190,6 +222,12 @@ mod tests {
         };
         static ref TEST_VALID_CMD: LcsfValidCmd = LcsfValidCmd {
             cmd_id: 0x12,
+            att_arr: Vec::new(),
+        };
+        static ref TEST_RAW_CMD: LcsfRawMsg = LcsfRawMsg {
+            prot_id: 0xab,
+            cmd_id: 0x12,
+            att_nb: 0,
             att_arr: Vec::new(),
         };
         static ref TEST_BUFF: Vec<u8> = vec![0xab, 0x12, 0x00];
@@ -273,6 +311,7 @@ mod tests {
         // Add protocol
         lcsf_core.add_protocol(0xab, &TEST_PROT_DESC, dummy_prot_callback);
         // Test function
+        BUFF_IS_VALID.store(false, Ordering::SeqCst);
         lcsf_core.send_cmd(0xab, &TEST_VALID_CMD);
         let is_valid: bool = BUFF_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
@@ -332,5 +371,23 @@ mod tests {
         assert!(!lcsf_core.receive_buff(&bad_prot_id_buff));
         let is_valid: bool = BAD_DATA_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
+    }
+
+    #[test]
+    fn test_send_raw() {
+        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, test_send_callback, false);
+        // Test function
+        BUFF_IS_VALID.store(false, Ordering::SeqCst);
+        lcsf_core.send_raw(&TEST_RAW_CMD);
+        let is_valid: bool = BUFF_IS_VALID.load(Ordering::SeqCst);
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_receive_raw() {
+        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, dummy_send_callback, false);
+        // Test function
+        let raw_msg = lcsf_core.receive_raw(&TEST_BUFF).unwrap();
+        assert_eq!(raw_msg, *TEST_RAW_CMD);
     }
 }

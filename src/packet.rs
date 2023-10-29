@@ -18,7 +18,7 @@ use lcsf_transcoder::LcsfModeEnum;
 use lcsf_validator::LcsfValidCmd;
 use std::sync::RwLock;
 
-// *** Using LcsfGenerator ***
+// *** Using Lcsf_Generator ***
 
 lazy_static! {
     /// Static LcsfCore reference to handle lcsf message processing
@@ -37,14 +37,14 @@ fn example_err_cb(_: &LcsfCore, cmd: &LcsfValidCmd) {
     println!("Custom function received error, location: {loc_str}, type: {type_str}");
 }
 
-/// Example use of LCSF when using LcsfGenerator
+/// Example use of LCSF when using Lcsf_Generator
 pub fn example_use_gen() {
     // Example data
     let example_buff: Vec<u8> = vec![0x55, 0x01, 0x00];
     let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01];
     let bad_data: Vec<u8> = vec![0x55, 0x05, 0x00];
 
-    println!("*** Example use with generator ***");
+    println!("*** Example use with Lcsf_Generator ***");
 
     let mut mut_core = CORE.write().unwrap();
 
@@ -68,7 +68,7 @@ pub fn example_use_gen() {
     core.receive_buff(&bad_data);
 }
 
-// *** Without LcsfGenerator ***
+// *** Without Lcsf_Generator ***
 use crate::lcsf_lib::lcsf_validator::LcsfAttDesc;
 use crate::lcsf_lib::lcsf_validator::LcsfCmdDesc;
 use crate::lcsf_lib::lcsf_validator::LcsfDataType;
@@ -105,7 +105,7 @@ fn dummy_process(_: &LcsfCore, cmd: &LcsfValidCmd) {
 
 /// Example use without Lcsf_Generator
 #[allow(dead_code)]
-pub fn example_use_other() {
+pub fn example_no_gen() {
     // Example data
     let example_valid_cmd = LcsfValidCmd {
         cmd_id: 0x12,
@@ -116,7 +116,7 @@ pub fn example_use_other() {
     let example_buff: Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
     let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01];
     let bad_data: Vec<u8> = vec![0xab, 0x10, 0x00];
-    println!("\n*** Example use without generator ***");
+    println!("\n*** Example use without Lcsf_Generator ***");
     // Create lcsf core
     let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
 
@@ -137,6 +137,44 @@ pub fn example_use_other() {
     // Receive bad data
     println!("Input bad date: {bad_data:?}");
     lcsf_core.receive_buff(&bad_data);
+}
+
+// *** Without protocol handling ***
+use lcsf_transcoder::LcsfRawAtt;
+use lcsf_transcoder::LcsfRawAttPayload;
+use lcsf_transcoder::LcsfRawMsg;
+
+/// Example use raw, without protocol handling
+#[allow(dead_code)]
+pub fn example_use_raw() {
+    // Example data
+    let example_raw_cmd: LcsfRawMsg = LcsfRawMsg {
+        prot_id: 0xab,
+        cmd_id: 0x12,
+        att_nb: 0,
+        att_arr: vec![(
+            0x55,
+            LcsfRawAtt {
+                has_subatt: false,
+                payload_size: 5,
+                payload: LcsfRawAttPayload::Data(vec![0x00, 0x01, 0x02, 0x03, 0x04]),
+            },
+        )],
+    };
+    let example_buff: Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
+    println!("\n*** Example use raw, without protocol handling ***");
+    // Create lcsf core
+    let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
+    // Receive buffer
+    println!("Input buffer: {example_buff:?}");
+    let opt_buff = lcsf_core.receive_raw(&example_buff);
+    match opt_buff {
+        Some(msg) => println!("Received message: {msg:?}"),
+        None => println!("Error during decoding"),
+    }
+    // Send command
+    println!("Input command: {example_raw_cmd:?}");
+    lcsf_core.send_raw(&example_raw_cmd);
 }
 
 #[cfg(test)]

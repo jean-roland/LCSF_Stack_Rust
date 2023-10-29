@@ -15,6 +15,7 @@ mod packet;
 fn main() {
     println!("*** Main start ***");
     packet::example_use_gen();
-    packet::example_use_other();
+    packet::example_no_gen();
+    packet::example_use_raw();
     println!("*** Main end ***");
 }
