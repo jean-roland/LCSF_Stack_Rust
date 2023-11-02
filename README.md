@@ -36,6 +36,8 @@ If you use LCSF Generator, you will get two more files per protocol:
 * `add_protocol`: Add your custom protocol `LcsfProtDesc`, allowing the core to process messages from this protocol.
 * `receive_buff`: Process an incoming lcsf message as a byte array.
 * `send_cmd`: Process an outgoing command.
+* `receive_raw`: Deserialize a lcsf message, if you want to skip protocol handling
+* `send_raw`: Serialize a `LcsfRawMsg`, if you want to skip protocol handling
 
 ## Init
 
