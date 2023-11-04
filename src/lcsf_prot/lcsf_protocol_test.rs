@@ -81,6 +81,9 @@ fn cc2_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
         sa9: Vec::new(),
         is_sa10_here: false,
         sa10: CString::new("").unwrap(),
+        sa11: 0,
+        sa12: 0.0,
+        sa13: 0.0,
     };
     // Get iterator
     let att_iter = &mut att_arr.iter();
@@ -94,7 +97,7 @@ fn cc2_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
     }
     // Retrieve data of attribute sa3
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
-        cc2_payload.sa3 = lcsf_validator::vle_decode(data);
+        cc2_payload.sa3 = lcsf_validator::vle_decode(data) as u32;
     }
     // Retrieve data of attribute sa4
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
@@ -122,7 +125,7 @@ fn cc2_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
         if *data != Vec::new() {
             cc2_payload.is_sa8_here = true;
-            cc2_payload.sa8 = lcsf_validator::vle_decode(data);
+            cc2_payload.sa8 = lcsf_validator::vle_decode(data) as u32;
         }
     }
     // Retrieve data of attribute sa9
@@ -138,6 +141,18 @@ fn cc2_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
             cc2_payload.is_sa10_here = true;
             cc2_payload.sa10 = CString::from_vec_with_nul(data.clone()).unwrap();
         }
+    }
+    // Retrieve data of attribute sa11
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc2_payload.sa11 = lcsf_validator::vle_decode(data);
+    }
+    // Retrieve data of attribute sa12
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc2_payload.sa12 = f32::from_le_bytes(data.as_slice().try_into().unwrap());
+    }
+    // Retrieve data of attribute sa13
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc2_payload.sa13 = f64::from_le_bytes(data.as_slice().try_into().unwrap());
     }
     CmdPayload::Cc2Payload(cc2_payload)
 }
@@ -159,6 +174,9 @@ fn cc3_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
         sa9: Vec::new(),
         is_sa10_here: false,
         sa10: CString::new("").unwrap(),
+        sa11: 0,
+        sa12: 0.0,
+        sa13: 0.0,
     };
     // Get iterator
     let att_iter = &mut att_arr.iter();
@@ -172,7 +190,7 @@ fn cc3_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
     }
     // Retrieve data of attribute sa3
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
-        cc3_payload.sa3 = lcsf_validator::vle_decode(data);
+        cc3_payload.sa3 = lcsf_validator::vle_decode(data) as u32;
     }
     // Retrieve data of attribute sa4
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
@@ -200,7 +218,7 @@ fn cc3_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
     if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
         if *data != Vec::new() {
             cc3_payload.is_sa8_here = true;
-            cc3_payload.sa8 = lcsf_validator::vle_decode(data);
+            cc3_payload.sa8 = lcsf_validator::vle_decode(data) as u32;
         }
     }
     // Retrieve data of attribute sa9
@@ -216,6 +234,18 @@ fn cc3_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
             cc3_payload.is_sa10_here = true;
             cc3_payload.sa10 = CString::from_vec_with_nul(data.clone()).unwrap();
         }
+    }
+    // Retrieve data of attribute sa11
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc3_payload.sa11 = lcsf_validator::vle_decode(data);
+    }
+    // Retrieve data of attribute sa12
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc3_payload.sa12 = f32::from_le_bytes(data.as_slice().try_into().unwrap());
+    }
+    // Retrieve data of attribute sa13
+    if let LcsfValidAttPayload::Data(data) = &att_iter.next().unwrap().payload {
+        cc3_payload.sa13 = f64::from_le_bytes(data.as_slice().try_into().unwrap());
     }
     CmdPayload::Cc3Payload(cc3_payload)
 }
@@ -262,7 +292,7 @@ fn cc5_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
         if let LcsfValidAttPayload::Data(data) = &subatt_iter.next().unwrap().payload {
             if *data != Vec::new() {
                 cc5_payload.ca5_payload.is_sa3_here = true;
-                cc5_payload.ca5_payload.sa3 = lcsf_validator::vle_decode(data);
+                cc5_payload.ca5_payload.sa3 = lcsf_validator::vle_decode(data) as u32;
             }
         }
     }
@@ -352,7 +382,7 @@ fn cc6_get_data(att_arr: &[LcsfValidAtt]) -> CmdPayload {
         if let LcsfValidAttPayload::Data(data) = &subatt_iter.next().unwrap().payload {
             if *data != Vec::new() {
                 cc6_payload.ca9_payload.is_sa3_here = true;
-                cc6_payload.ca9_payload.sa3 = lcsf_validator::vle_decode(data);
+                cc6_payload.ca9_payload.sa3 = lcsf_validator::vle_decode(data) as u32;
             }
         }
     }
@@ -427,15 +457,15 @@ fn cc1_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
     if let CmdPayload::Cc1Payload(payload) = &cmd_payload {
         // Fill data of attribute sa1
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u64)),
         });
         // Fill data of attribute sa2
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa2 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa2 as u64)),
         });
         // Fill data of attribute sa3
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa3 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa3 as u64)),
         });
         // Fill data of attribute sa4
         att_arr.push(LcsfValidAtt {
@@ -448,7 +478,7 @@ fn cc1_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa6
         if payload.is_sa6_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa6 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa6 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -458,7 +488,7 @@ fn cc1_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa7
         if payload.is_sa7_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa7 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa7 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -468,7 +498,7 @@ fn cc1_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa8
         if payload.is_sa8_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa8 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa8 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -495,6 +525,18 @@ fn cc1_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                 payload: LcsfValidAttPayload::Data(Vec::new()),
             });
         }
+        // Fill data of attribute sa11
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa11)),
+        });
+        // Fill data of attribute sa12
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(payload.sa12.to_le_bytes().to_vec()),
+        });
+        // Fill data of attribute sa13
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(payload.sa13.to_le_bytes().to_vec()),
+        });
     }
     att_arr
 }
@@ -504,15 +546,15 @@ fn cc3_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
     if let CmdPayload::Cc3Payload(payload) = &cmd_payload {
         // Fill data of attribute sa1
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u64)),
         });
         // Fill data of attribute sa2
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa2 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa2 as u64)),
         });
         // Fill data of attribute sa3
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa3 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa3 as u64)),
         });
         // Fill data of attribute sa4
         att_arr.push(LcsfValidAtt {
@@ -525,7 +567,7 @@ fn cc3_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa6
         if payload.is_sa6_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa6 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa6 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -535,7 +577,7 @@ fn cc3_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa7
         if payload.is_sa7_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa7 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa7 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -545,7 +587,7 @@ fn cc3_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
         // Fill data of attribute sa8
         if payload.is_sa8_here {
             att_arr.push(LcsfValidAtt {
-                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa8 as u32)),
+                payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa8 as u64)),
             });
         } else {
             att_arr.push(LcsfValidAtt {
@@ -572,6 +614,18 @@ fn cc3_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                 payload: LcsfValidAttPayload::Data(Vec::new()),
             });
         }
+        // Fill data of attribute sa11
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa11)),
+        });
+        // Fill data of attribute sa12
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(payload.sa12.to_le_bytes().to_vec()),
+        });
+        // Fill data of attribute sa13
+        att_arr.push(LcsfValidAtt {
+            payload: LcsfValidAttPayload::Data(payload.sa13.to_le_bytes().to_vec()),
+        });
     }
     att_arr
 }
@@ -581,7 +635,7 @@ fn cc4_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
     if let CmdPayload::Cc4Payload(payload) = &cmd_payload {
         // Fill data of attribute sa1
         att_arr.push(LcsfValidAtt {
-            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u32)),
+            payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(payload.sa1 as u64)),
         });
         // Fill data of attribute ca1
         att_arr.push(LcsfValidAtt {
@@ -589,20 +643,20 @@ fn cc4_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                 // Fill data of sub-attribute sa1
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                        payload.ca1_payload.sa1 as u32,
+                        payload.ca1_payload.sa1 as u64,
                     )),
                 },
                 // Fill data of sub-attribute sa2
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                        payload.ca1_payload.sa2 as u32,
+                        payload.ca1_payload.sa2 as u64,
                     )),
                 },
                 // Fill data of sub-attribute sa3
                 LcsfValidAtt {
                     payload: if payload.ca1_payload.is_sa3_here {
                         LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                            payload.ca1_payload.sa3 as u32,
+                            payload.ca1_payload.sa3 as u64,
                         ))
                     } else {
                         LcsfValidAttPayload::Data(Vec::new())
@@ -618,7 +672,7 @@ fn cc4_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                     LcsfValidAtt {
                         payload: if payload.ca2_payload.is_sa1_here {
                             LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                                payload.ca2_payload.sa1 as u32,
+                                payload.ca2_payload.sa1 as u64,
                             ))
                         } else {
                             LcsfValidAttPayload::Data(Vec::new())
@@ -631,7 +685,7 @@ fn cc4_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                             LcsfValidAtt {
                                 payload: if payload.ca2_payload.ca3_payload.is_sa1_here {
                                     LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                                        payload.ca2_payload.ca3_payload.sa1 as u32,
+                                        payload.ca2_payload.ca3_payload.sa1 as u64,
                                     ))
                                 } else {
                                     LcsfValidAttPayload::Data(Vec::new())
@@ -674,20 +728,20 @@ fn cc6_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                 // Fill data of sub-attribute sa1
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                        payload.ca9_payload.sa1 as u32,
+                        payload.ca9_payload.sa1 as u64,
                     )),
                 },
                 // Fill data of sub-attribute sa2
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                        payload.ca9_payload.sa2 as u32,
+                        payload.ca9_payload.sa2 as u64,
                     )),
                 },
                 // Fill data of sub-attribute sa3
                 LcsfValidAtt {
                     payload: if payload.ca9_payload.is_sa3_here {
                         LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                            payload.ca9_payload.sa3 as u32,
+                            payload.ca9_payload.sa3 as u64,
                         ))
                     } else {
                         LcsfValidAttPayload::Data(Vec::new())
@@ -703,7 +757,7 @@ fn cc6_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                     LcsfValidAtt {
                         payload: if payload.ca10_payload.is_sa1_here {
                             LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                                payload.ca10_payload.sa1 as u32,
+                                payload.ca10_payload.sa1 as u64,
                             ))
                         } else {
                             LcsfValidAttPayload::Data(Vec::new())
@@ -716,7 +770,7 @@ fn cc6_fill_att(cmd_payload: &CmdPayload) -> Vec<LcsfValidAtt> {
                             LcsfValidAtt {
                                 payload: if payload.ca10_payload.ca11_payload.is_sa1_here {
                                     LcsfValidAttPayload::Data(lcsf_validator::vle_encode(
-                                        payload.ca10_payload.ca11_payload.sa1 as u32,
+                                        payload.ca10_payload.ca11_payload.sa1 as u64,
                                     ))
                                 } else {
                                     LcsfValidAttPayload::Data(Vec::new())
@@ -850,6 +904,9 @@ const CC1_ATT_ID_SA7: u16 = 0x6;
 const CC1_ATT_ID_SA8: u16 = 0x7;
 const CC1_ATT_ID_SA9: u16 = 0x8;
 const CC1_ATT_ID_SA10: u16 = 0x9;
+const CC1_ATT_ID_SA11: u16 = 0xa;
+const CC1_ATT_ID_SA12: u16 = 0xb;
+const CC1_ATT_ID_SA13: u16 = 0xc;
 
 // Cc2 attribute ids
 const CC2_ATT_ID_SA1: u16 = 0x0;
@@ -862,6 +919,9 @@ const CC2_ATT_ID_SA7: u16 = 0x6;
 const CC2_ATT_ID_SA8: u16 = 0x7;
 const CC2_ATT_ID_SA9: u16 = 0x8;
 const CC2_ATT_ID_SA10: u16 = 0x9;
+const CC2_ATT_ID_SA11: u16 = 0xa;
+const CC2_ATT_ID_SA12: u16 = 0xb;
+const CC2_ATT_ID_SA13: u16 = 0xc;
 
 // Cc3 attribute ids
 const CC3_ATT_ID_SA1: u16 = 0x0;
@@ -874,6 +934,9 @@ const CC3_ATT_ID_SA7: u16 = 0x6;
 const CC3_ATT_ID_SA8: u16 = 0x7;
 const CC3_ATT_ID_SA9: u16 = 0x8;
 const CC3_ATT_ID_SA10: u16 = 0x9;
+const CC3_ATT_ID_SA11: u16 = 0xa;
+const CC3_ATT_ID_SA12: u16 = 0xb;
+const CC3_ATT_ID_SA13: u16 = 0xc;
 
 // Cc4 attribute ids
 const CC4_ATT_ID_SA1: u16 = 0x0;
@@ -907,6 +970,9 @@ lazy_static! {
             (CC1_ATT_ID_SA8, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::Uint32, subatt_desc_arr: Vec::new()}),
             (CC1_ATT_ID_SA9, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::ByteArray, subatt_desc_arr: Vec::new()}),
             (CC1_ATT_ID_SA10, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::String, subatt_desc_arr: Vec::new()}),
+            (CC1_ATT_ID_SA11, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint64, subatt_desc_arr: Vec::new()}),
+            (CC1_ATT_ID_SA12, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float32, subatt_desc_arr: Vec::new()}),
+            (CC1_ATT_ID_SA13, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float64, subatt_desc_arr: Vec::new()}),
         ]}),
         (CMD_ID_CC2, LcsfCmdDesc {att_desc_arr: vec![
             (CC2_ATT_ID_SA1, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint8, subatt_desc_arr: Vec::new()}),
@@ -919,6 +985,9 @@ lazy_static! {
             (CC2_ATT_ID_SA8, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::Uint32, subatt_desc_arr: Vec::new()}),
             (CC2_ATT_ID_SA9, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::ByteArray, subatt_desc_arr: Vec::new()}),
             (CC2_ATT_ID_SA10, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::String, subatt_desc_arr: Vec::new()}),
+            (CC2_ATT_ID_SA11, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint64, subatt_desc_arr: Vec::new()}),
+            (CC2_ATT_ID_SA12, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float32, subatt_desc_arr: Vec::new()}),
+            (CC2_ATT_ID_SA13, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float64, subatt_desc_arr: Vec::new()}),
         ]}),
         (CMD_ID_CC3, LcsfCmdDesc {att_desc_arr: vec![
             (CC3_ATT_ID_SA1, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint8, subatt_desc_arr: Vec::new()}),
@@ -931,6 +1000,9 @@ lazy_static! {
             (CC3_ATT_ID_SA8, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::Uint32, subatt_desc_arr: Vec::new()}),
             (CC3_ATT_ID_SA9, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::ByteArray, subatt_desc_arr: Vec::new()}),
             (CC3_ATT_ID_SA10, LcsfAttDesc { is_optional: true, data_type: LcsfDataType::String, subatt_desc_arr: Vec::new()}),
+            (CC3_ATT_ID_SA11, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint64, subatt_desc_arr: Vec::new()}),
+            (CC3_ATT_ID_SA12, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float32, subatt_desc_arr: Vec::new()}),
+            (CC3_ATT_ID_SA13, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Float64, subatt_desc_arr: Vec::new()}),
         ]}),
         (CMD_ID_CC4, LcsfCmdDesc {att_desc_arr: vec![
             (CC4_ATT_ID_SA1, LcsfAttDesc { is_optional: false, data_type: LcsfDataType::Uint8, subatt_desc_arr: Vec::new()}),
@@ -1015,6 +1087,9 @@ mod tests {
             sa8: 149999,
             sa9: vec![1, 2, 3, 4, 5],
             sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
         };
         let cc3_payload = Cc3AttPayload {
             is_sa6_here: true,
@@ -1032,6 +1107,9 @@ mod tests {
             sa8: 149999,
             sa9: Vec::new(),
             sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
         };
         let cc5_payload = Cc5AttPayload {
             is_ca6_here: true,
@@ -1116,6 +1194,17 @@ mod tests {
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
                 },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
+                },
             ],
         };
         let valid_cc3_cmd = LcsfValidCmd {
@@ -1150,6 +1239,17 @@ mod tests {
                 },
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
                 },
             ],
         };
@@ -1273,6 +1373,9 @@ mod tests {
             sa8: 150000,
             sa9: vec![2, 3, 4, 5, 6],
             sa10: CString::new("Qbvm").unwrap(),
+            sa11: 5000000001,
+            sa12: 2.61803398875,
+            sa13: 4.14159265359,
         };
         let cc3_payload = Cc3AttPayload {
             is_sa6_here: true,
@@ -1290,6 +1393,9 @@ mod tests {
             sa8: 149999,
             sa9: Vec::new(),
             sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
         };
         let cc4_payload = Cc4AttPayload {
             is_ca2_here: true,
@@ -1374,6 +1480,17 @@ mod tests {
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x51, 0x62, 0x76, 0x6d, 0x00]),
                 },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x01, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xde, 0x8d, 0x27, 0x40]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0x75, 0x17, 0x22, 0xaa, 0xfd, 0x90, 0x10, 0x40,
+                    ]),
+                },
             ],
         };
         let valid_cc3_cmd = LcsfValidCmd {
@@ -1408,6 +1525,17 @@ mod tests {
                 },
                 LcsfValidAtt {
                     payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
                 },
             ],
         };

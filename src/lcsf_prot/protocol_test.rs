@@ -56,6 +56,9 @@ pub struct Cc1AttPayload {
     pub sa9: Vec<u8>,
     pub is_sa10_here: bool,
     pub sa10: CString,
+    pub sa11: u64,
+    pub sa12: f32,
+    pub sa13: f64,
 }
 
 #[derive(Debug, PartialEq)]
@@ -75,6 +78,9 @@ pub struct Cc2AttPayload {
     pub sa9: Vec<u8>,
     pub is_sa10_here: bool,
     pub sa10: CString,
+    pub sa11: u64,
+    pub sa12: f32,
+    pub sa13: f64,
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,6 +100,9 @@ pub struct Cc3AttPayload {
     pub sa9: Vec<u8>,
     pub is_sa10_here: bool,
     pub sa10: CString,
+    pub sa11: u64,
+    pub sa12: f32,
+    pub sa13: f64,
 }
 
 #[derive(Debug, PartialEq)]
@@ -225,6 +234,9 @@ fn execute_cc2(payload: &Cc2AttPayload) -> (CmdEnum, CmdPayload) {
     let mut sa8 = 0;
     let mut sa9 = &Vec::new();
     let mut sa10 = &CString::new("").unwrap();
+    let sa11 = payload.sa11;
+    let sa12 = payload.sa12;
+    let sa13 = payload.sa13;
     if payload.is_sa6_here {
         sa6 = payload.sa6;
     }
@@ -257,6 +269,9 @@ fn execute_cc2(payload: &Cc2AttPayload) -> (CmdEnum, CmdPayload) {
         sa8: sa8 + 1,
         sa9: Vec::new(),
         sa10: CString::new("").unwrap(),
+        sa11: sa11 + 1,
+        sa12: sa12 + 1.0,
+        sa13: sa13 + 1.0,
     };
     for byte in sa4 {
         send_payload.sa4.push(*byte + 1);
@@ -291,6 +306,9 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
     let mut sa8 = 0;
     let mut sa9 = &Vec::new();
     let mut sa10 = &CString::new("").unwrap();
+    let sa11 = payload.sa11;
+    let sa12 = payload.sa12;
+    let sa13 = payload.sa13;
     if payload.is_sa6_here {
         sa6 = payload.sa6;
     }
@@ -323,6 +341,9 @@ fn execute_cc3(payload: &Cc3AttPayload) -> (CmdEnum, CmdPayload) {
         sa8: sa8 + 1,
         sa9: Vec::new(),
         sa10: CString::new("").unwrap(),
+        sa11: sa11 + 1,
+        sa12: sa12 + 1.0,
+        sa13: sa13 + 1.0,
     };
     for byte in sa4 {
         send_payload.sa4.push(*byte + 1);
@@ -541,6 +562,9 @@ mod tests {
             sa8: 149999,
             sa9: vec![1, 2, 3, 4, 5],
             sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
         };
         let cc1_payload = Cc1AttPayload {
             is_sa6_here: true,
@@ -558,6 +582,9 @@ mod tests {
             sa8: 150000,
             sa9: vec![2, 3, 4, 5, 6],
             sa10: CString::new("luaP").unwrap(),
+            sa11: 5000000001,
+            sa12: 2.61803398875,
+            sa13: 4.14159265359,
         };
         let cc3_payload = Cc3AttPayload {
             is_sa6_here: true,
@@ -575,6 +602,9 @@ mod tests {
             sa8: 149999,
             sa9: Vec::new(),
             sa10: CString::new("Nostril").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
         };
         let cc3u_payload = Cc3AttPayload {
             is_sa6_here: true,
@@ -592,6 +622,9 @@ mod tests {
             sa8: 150000,
             sa9: Vec::new(),
             sa10: CString::new("lirtsoN").unwrap(),
+            sa11: 5000000001,
+            sa12: 2.61803398875,
+            sa13: 4.14159265359,
         };
         let cc5_payload = Cc5AttPayload {
             is_ca6_here: true,

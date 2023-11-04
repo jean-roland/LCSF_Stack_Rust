@@ -22,6 +22,9 @@ pub enum LcsfDataType {
     Uint8,
     Uint16,
     Uint32,
+    Uint64,
+    Float32,
+    Float64,
     ByteArray,
     String,
     Subattributes,
@@ -95,9 +98,12 @@ pub enum LcsfValidateErrorEnum {
 fn validate_data_type(data_size: usize, data_type: LcsfDataType) -> bool {
     // Check data type
     match data_type {
-        LcsfDataType::Uint8 => data_size <= size_of::<u8>(),
+        LcsfDataType::Uint8 => data_size == size_of::<u8>(),
         LcsfDataType::Uint16 => data_size != 0 && data_size <= size_of::<u16>(),
         LcsfDataType::Uint32 => data_size != 0 && data_size <= size_of::<u32>(),
+        LcsfDataType::Uint64 => data_size != 0 && data_size <= size_of::<u64>(),
+        LcsfDataType::Float32 => data_size == size_of::<f32>(),
+        LcsfDataType::Float64 => data_size == size_of::<f64>(),
         LcsfDataType::ByteArray => data_size > 0,
         LcsfDataType::String => data_size > 0,
         LcsfDataType::Subattributes => false,
@@ -267,6 +273,9 @@ fn check_data_type(data_type: LcsfDataType, data: &[u8]) -> bool {
         LcsfDataType::Uint8 => data.len() == std::mem::size_of::<u8>(),
         LcsfDataType::Uint16 => !data.is_empty() && data.len() <= std::mem::size_of::<u16>(),
         LcsfDataType::Uint32 => !data.is_empty() && data.len() <= std::mem::size_of::<u32>(),
+        LcsfDataType::Uint64 => !data.is_empty() && data.len() <= std::mem::size_of::<u64>(),
+        LcsfDataType::Float32 => data.len() == std::mem::size_of::<f32>(),
+        LcsfDataType::Float64 => data.len() == std::mem::size_of::<f64>(),
         LcsfDataType::ByteArray => !data.is_empty(),
         LcsfDataType::String => !data.is_empty(),
         LcsfDataType::Subattributes => false,
@@ -401,13 +410,21 @@ pub fn encode_valid(
 /// Encode an integer depending on its value
 ///
 /// data: integer to encode
-pub fn vle_encode(data: u32) -> Vec<u8> {
+pub fn vle_encode(data: u64) -> Vec<u8> {
     if data <= 0x0000_00ff {
         data.to_le_bytes()[0..1].to_vec()
     } else if data <= 0x0000_ffff {
         data.to_le_bytes()[0..2].to_vec()
     } else if data <= 0x00ff_ffff {
         data.to_le_bytes()[0..3].to_vec()
+    } else if data <= 0xffff_ffff {
+        data.to_le_bytes()[0..4].to_vec()
+    } else if data <= 0x0000_00ff_ffff_ffff {
+        data.to_le_bytes()[0..5].to_vec()
+    } else if data <= 0x0000_ffff_ffff_ffff {
+        data.to_le_bytes()[0..6].to_vec()
+    } else if data <= 0x00ff_ffff_ffff_ffff {
+        data.to_le_bytes()[0..7].to_vec()
     } else {
         data.to_le_bytes().to_vec()
     }
@@ -416,16 +433,32 @@ pub fn vle_encode(data: u32) -> Vec<u8> {
 /// Decode a vector into an integer depending on its size
 ///
 /// data: vector to decode
-pub fn vle_decode(data: &[u8]) -> u32 {
+pub fn vle_decode(data: &[u8]) -> u64 {
     match data.len() {
-        1 => u8::from_le_bytes(data.try_into().unwrap()) as u32,
-        2 => u16::from_le_bytes(data.try_into().unwrap()) as u32,
+        1 => u8::from_le_bytes(data.try_into().unwrap()) as u64,
+        2 => u16::from_le_bytes(data.try_into().unwrap()) as u64,
         3 => {
             let mut tmp: [u8; 4] = [0; 4];
             tmp[..3].copy_from_slice(data);
-            u32::from_le_bytes(tmp.try_into().unwrap())
+            u32::from_le_bytes(tmp) as u64
         }
-        _ => u32::from_le_bytes(data.try_into().unwrap()),
+        4 => u32::from_le_bytes(data.try_into().unwrap()) as u64,
+        5 => {
+            let mut tmp: [u8; 8] = [0; 8];
+            tmp[..5].copy_from_slice(data);
+            u64::from_le_bytes(tmp)
+        }
+        6 => {
+            let mut tmp: [u8; 8] = [0; 8];
+            tmp[..6].copy_from_slice(data);
+            u64::from_le_bytes(tmp)
+        }
+        7 => {
+            let mut tmp: [u8; 8] = [0; 8];
+            tmp[..7].copy_from_slice(data);
+            u64::from_le_bytes(tmp)
+        }
+        _ => u64::from_le_bytes(data.try_into().unwrap()),
     }
 }
 
@@ -784,6 +817,58 @@ mod tests {
         assert_eq!(vle_encode(0x0100_0000), vec![0x00, 0x00, 0x00, 0x01]);
         assert_eq!(vle_encode(0x18c4_d307), vec![0x07, 0xd3, 0xc4, 0x18]); // arbitrary
         assert_eq!(vle_encode(0xffff_ffff), vec![0xff, 0xff, 0xff, 0xff]);
+
+        assert_eq!(
+            vle_encode(0x0001_0000_0000),
+            vec![0x00, 0x00, 0x00, 0x00, 0x01]
+        );
+        assert_eq!(
+            vle_encode(0x0064_c250_f4fa),
+            vec![0xfa, 0xf4, 0x50, 0xc2, 0x64]
+        ); // arbitrary
+        assert_eq!(
+            vle_encode(0x00ff_ffff_ffff),
+            vec![0xff, 0xff, 0xff, 0xff, 0xff]
+        );
+
+        assert_eq!(
+            vle_encode(0x0100_0000_0000),
+            vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x01]
+        );
+        assert_eq!(
+            vle_encode(0x9cc3_fb11_b606),
+            vec![0x06, 0xb6, 0x11, 0xfb, 0xc3, 0x9c]
+        ); // arbitrary
+        assert_eq!(
+            vle_encode(0xffff_ffff_ffff),
+            vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+        );
+
+        assert_eq!(
+            vle_encode(0x0001_0000_0000_0000),
+            vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]
+        );
+        assert_eq!(
+            vle_encode(0x001f_313c_63e9_99fc),
+            vec![0xfc, 0x99, 0xe9, 0x63, 0x3c, 0x31, 0x1f]
+        ); // arbitrary
+        assert_eq!(
+            vle_encode(0x00ff_ffff_ffff_ffff),
+            vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+        );
+
+        assert_eq!(
+            vle_encode(0x0100_0000_0000_0000),
+            vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]
+        );
+        assert_eq!(
+            vle_encode(0x58ce_2502_2d6a_6d43),
+            vec![0x43, 0x6d, 0x6a, 0x2d, 0x02, 0x25, 0xce, 0x58]
+        ); // arbitrary
+        assert_eq!(
+            vle_encode(0xffff_ffff_ffff_ffff),
+            vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+        );
     }
 
     #[test]
@@ -801,6 +886,57 @@ mod tests {
         assert_eq!(vle_decode(&vec![0x00, 0x00, 0x00, 0x01]), 0x0100_0000);
         assert_eq!(vle_decode(&vec![0x07, 0xd3, 0xc4, 0x18]), 0x18c4_d307); // arbitrary
         assert_eq!(vle_decode(&vec![0xff, 0xff, 0xff, 0xff]), 0xffff_ffff);
+
+        assert_eq!(
+            vle_decode(&vec![0x00, 0x00, 0x00, 0x00, 0x01]),
+            0x0001_0000_0000
+        );
+        assert_eq!(
+            vle_decode(&vec![0xfa, 0xf4, 0x50, 0xc2, 0x64]),
+            0x0064_c250_f4fa
+        ); // arbitrary
+        assert_eq!(
+            vle_decode(&vec![0xff, 0xff, 0xff, 0xff, 0xff]),
+            0x00ff_ffff_ffff
+        );
+
+        assert_eq!(
+            vle_decode(&vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x01]),
+            0x0100_0000_0000
+        );
+        assert_eq!(
+            vle_decode(&vec![0x06, 0xb6, 0x11, 0xfb, 0xc3, 0x9c]),
+            0x9cc3_fb11_b606
+        ); // arbitrary
+        assert_eq!(
+            vle_decode(&vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+            0xffff_ffff_ffff
+        );
+
+        assert_eq!(
+            vle_decode(&vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]),
+            0x0001_0000_0000_0000
+        );
+        assert_eq!(
+            vle_decode(&vec![0xfc, 0x99, 0xe9, 0x63, 0x3c, 0x31, 0x1f]),
+            0x001f_313c_63e9_99fc
+        ); // arbitrary
+        assert_eq!(
+            vle_decode(&vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+            0x00ff_ffff_ffff_ffff
+        );
+        assert_eq!(
+            vle_decode(&vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]),
+            0x0100_0000_0000_0000
+        );
+        assert_eq!(
+            vle_decode(&vec![0x43, 0x6d, 0x6a, 0x2d, 0x02, 0x25, 0xce, 0x58]),
+            0x58ce_2502_2d6a_6d43
+        ); // arbitrary
+        assert_eq!(
+            vle_decode(&vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+            0xffff_ffff_ffff_ffff
+        );
     }
 
     // Tests data
