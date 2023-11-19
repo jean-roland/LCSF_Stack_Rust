@@ -22,12 +22,12 @@ use std::sync::RwLock;
 
 lazy_static! {
     /// Static LcsfCore reference to handle lcsf message processing
-    static ref CORE: RwLock<LcsfCore> = RwLock::new(LcsfCore::new(LcsfModeEnum::Small, example_send, false));
+    static ref CORE: RwLock<LcsfCore> = RwLock::new(LcsfCore::new(LcsfModeEnum::Small, false));
 }
 
 /// Called by LcsfCore to send lcsf buffer where they need to do
 fn example_send(pkt: &[u8]) {
-    println!("packet to send: {pkt:?}");
+    println!("Packet to send: {pkt:?}");
 }
 
 /// Custom function called when an lcsf error message is received
@@ -49,11 +49,11 @@ pub fn example_use_gen() {
     let mut mut_core = CORE.write().unwrap();
 
     // Init protocols in core
-    protocol_test::init_core(&mut mut_core);
+    protocol_test::init_protocol(&mut mut_core, example_send);
     // (Add more protocols here)
 
-    // Update err callback (optional, only if you want to handle error message)
-    // mut_core.update_err_cb(example_err_cb);
+    // Update err callbacks (optional, only if you want to handle error message)
+    mut_core.update_err_cb(example_err_cb, example_send);
 
     drop(mut_core);
     // Receive buffer
@@ -118,10 +118,10 @@ pub fn example_no_gen() {
     let bad_data: Vec<u8> = vec![0xab, 0x10, 0x00];
     println!("\n*** Example use without Lcsf_Generator ***");
     // Create lcsf core
-    let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
+    let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, true);
 
-    // Update err callback (optional, only if you want to handle error message)
-    // lcsf_core.update_err_cb(example_err_cb);
+    // Update err callbacks (optional, only if you want to handle error message)
+    lcsf_core.update_err_cb(example_err_cb, example_send);
 
     // Add protocol
     lcsf_core.add_protocol(0xab, &EXAMPLE_DESC, dummy_process);
@@ -164,7 +164,7 @@ pub fn example_use_raw() {
     let example_buff: Vec<u8> = vec![0xab, 0x12, 0x01, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04];
     println!("\n*** Example use raw, without protocol handling ***");
     // Create lcsf core
-    let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, example_send, true);
+    let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, true);
     // Receive buffer
     println!("Input buffer: {example_buff:?}");
     let opt_buff = lcsf_core.receive_raw(&example_buff);
@@ -188,7 +188,7 @@ mod tests {
 
     lazy_static! {
         /// Static LcsfCore reference to handle lcsf message processing
-        static ref TEST_CORE: RwLock<LcsfCore> = RwLock::new(LcsfCore::new(LcsfModeEnum::Small, test_send, true));
+        static ref TEST_CORE: RwLock<LcsfCore> = RwLock::new(LcsfCore::new(LcsfModeEnum::Small, true));
 
         // Test data
         static ref ERR_FORMAT_MSG: Vec<u8> =
@@ -531,8 +531,8 @@ mod tests {
     fn test_fullstack() {
         // Init protocol
         let mut mut_core = TEST_CORE.write().unwrap();
-        protocol_test::init_core(&mut mut_core);
-        mut_core.update_err_cb(test_err_cb);
+        protocol_test::init_protocol(&mut mut_core, test_send);
+        mut_core.update_err_cb(test_err_cb, test_send);
         drop(mut_core);
         let core = TEST_CORE.read().unwrap();
 

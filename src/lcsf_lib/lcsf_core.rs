@@ -22,8 +22,8 @@ use lcsf_validator::LcsfValidCmd;
 
 /// Callback prototype to process a valid command
 pub type ProtCallback = fn(&LcsfCore, &LcsfValidCmd);
-/// Callback prototype to send lcsf serialized data
-pub type SendCallback = fn(&[u8]);
+/// Callback prototype to send generated lcsf error messages
+pub type SendErrCallback = fn(&[u8]);
 
 /// Main lcsf structure
 #[derive(Debug)]
@@ -32,8 +32,8 @@ pub struct LcsfCore {
     do_gen_err: bool,
     /// Lcsf representation mode to use
     lcsf_mode: LcsfModeEnum,
-    /// Send callback for lcsf serialized data
-    fn_send: SendCallback,
+    /// Send callback for lcsf error
+    fn_send_err: SendErrCallback,
     /// Protocol descriptions hash map
     prot_desc_map: HashMap<u16, &'static LcsfProtDesc>,
     /// Protocol callbacks hash map
@@ -53,6 +53,18 @@ fn def_process_error(_: &LcsfCore, valid_cmd: &LcsfValidCmd) {
     );
 }
 
+/// Default function to send lcsf errors,
+/// replace as needed through update_err_cb()
+///
+/// valid_cmd: validated error command
+fn def_send_error(buff: &[u8]) {
+    println!(
+        "[{}:{}]: Decoding generated an error frame: {buff:?}",
+        module_path!(),
+        line!()
+    );
+}
+
 impl LcsfCore {
     /// Create an instance of a LcsfCore
     ///
@@ -61,7 +73,7 @@ impl LcsfCore {
     /// send_cb: callback to send byte array
     ///
     /// do_gen_err: control lcsf error packet generation
-    pub fn new(mode: LcsfModeEnum, send_cb: SendCallback, do_gen_err: bool) -> Self {
+    pub fn new(mode: LcsfModeEnum, do_gen_err: bool) -> Self {
         let err_prot_id = match mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
             LcsfModeEnum::Normal => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
@@ -69,7 +81,7 @@ impl LcsfCore {
         LcsfCore {
             do_gen_err,
             lcsf_mode: mode,
-            fn_send: send_cb,
+            fn_send_err: def_send_error,
             prot_desc_map: HashMap::from([(err_prot_id, &LCSF_EP_PROT_DESC as &LcsfProtDesc)]),
             prot_cb_map: HashMap::from([(err_prot_id, def_process_error as ProtCallback)]),
         }
@@ -77,14 +89,15 @@ impl LcsfCore {
 
     /// Change the error processing callback
     ///
-    /// new_err_cb: new error callback
-    #[allow(dead_code)]
-    pub fn update_err_cb(&mut self, new_err_cb: ProtCallback) {
+    /// rx_err_cb: new receive error callback
+    /// tx_err_cb: new send error message callback
+    pub fn update_err_cb(&mut self, rx_err_cb: ProtCallback, tx_err_cb: SendErrCallback) {
         let err_prot_id = match self.lcsf_mode {
             LcsfModeEnum::Small => lcsf_error::LCSF_EP_PROT_ID_SMALL,
             LcsfModeEnum::Normal => lcsf_error::LCSF_EP_PROT_ID_NORMAL,
         };
-        self.prot_cb_map.insert(err_prot_id, new_err_cb);
+        self.prot_cb_map.insert(err_prot_id, rx_err_cb);
+        self.fn_send_err = tx_err_cb;
     }
 
     /// Add a protocol
@@ -119,7 +132,7 @@ impl LcsfCore {
                         LcsfEpLocEnum::DecodeError,
                         err as u8,
                     );
-                    (self.fn_send)(&buff);
+                    (self.fn_send_err)(&buff);
                 }
                 return false;
             }
@@ -137,7 +150,7 @@ impl LcsfCore {
                         LcsfEpLocEnum::ValidationError,
                         err as u8,
                     );
-                    (self.fn_send)(&buff);
+                    (self.fn_send_err)(&buff);
                 }
                 return false;
             }
@@ -154,16 +167,15 @@ impl LcsfCore {
     /// prot_id: protocol id
     ///
     /// valid_cmd: valid command reference
-    pub fn send_cmd(&self, prot_id: u16, valid_cmd: &LcsfValidCmd) {
+    pub fn send_cmd(&self, prot_id: u16, valid_cmd: &LcsfValidCmd) -> Vec<u8> {
         // Retrieve cmd desc
         let prot_desc = self.prot_desc_map.get(&prot_id).unwrap();
         let cmd_desc_map: HashMap<u16, LcsfCmdDesc> =
             prot_desc.cmd_desc_arr.iter().cloned().collect();
         let cmd_desc = cmd_desc_map.get(&valid_cmd.cmd_id).unwrap();
         let raw_msg = lcsf_validator::encode_valid(prot_id, cmd_desc, valid_cmd).unwrap();
-        let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg);
-        // Send buffer
-        (self.fn_send)(&buff);
+        // Return buffer
+        lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg)
     }
 
     /// Process an incoming lcsf message, when you want to bypass protocol handling
@@ -181,7 +193,7 @@ impl LcsfCore {
                         LcsfEpLocEnum::DecodeError,
                         err as u8,
                     );
-                    (self.fn_send)(&buff);
+                    (self.fn_send_err)(&buff);
                 }
                 None
             }
@@ -192,9 +204,8 @@ impl LcsfCore {
     /// Send a LcsfRawMsg, when you want to bypass protocol handling
     ///
     /// raw_msg: raw message reference
-    pub fn send_raw(&self, raw_msg: &LcsfRawMsg) {
-        let buff = lcsf_transcoder::encode_buff(self.lcsf_mode, raw_msg);
-        (self.fn_send)(&buff);
+    pub fn send_raw(&self, raw_msg: &LcsfRawMsg) -> Vec<u8> {
+        lcsf_transcoder::encode_buff(self.lcsf_mode, raw_msg)
     }
 }
 
@@ -235,35 +246,44 @@ mod tests {
 
     #[test]
     fn test_new_lcsf_core() {
-        let lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, dummy_send_callback, false);
+        let lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, false);
         // Assert that the instance is created correctly
         assert_eq!(lcsf_core.lcsf_mode, LcsfModeEnum::Normal);
-        if lcsf_core.fn_send != dummy_send_callback {
-            panic!("Invalid callback pointer");
-        }
+        assert_eq!(lcsf_core.do_gen_err, false);
+
+        let lcsf_core2 = LcsfCore::new(LcsfModeEnum::Small, true);
+        // Assert that the instance is created correctly
+        assert_eq!(lcsf_core2.lcsf_mode, LcsfModeEnum::Small);
+        assert_eq!(lcsf_core2.do_gen_err, true);
     }
 
     #[test]
     fn test_update_err_cb() {
-        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, dummy_send_callback, false);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, false);
         // Check current callback
         let err_prot_id = lcsf_error::LCSF_EP_PROT_ID_NORMAL;
         let mut error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
         if *error_callback != def_process_error as ProtCallback {
-            panic!("Invalid callback pointer");
+            panic!("Invalid rx callback pointer");
+        }
+        if lcsf_core.fn_send_err != def_send_error {
+            panic!("Invalid tx callback pointer");
         }
         // Update the error callback
-        lcsf_core.update_err_cb(dummy_prot_callback);
+        lcsf_core.update_err_cb(dummy_prot_callback, dummy_send_callback);
         // Assert that the error callback is updated correctly
         error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
         if *error_callback != dummy_prot_callback as ProtCallback {
-            panic!("Invalid callback pointer");
+            panic!("Invalid rx callback pointer");
+        }
+        if lcsf_core.fn_send_err != dummy_send_callback {
+            panic!("Invalid tx callback pointer");
         }
     }
 
     #[test]
     fn test_add_protocol() {
-        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, dummy_send_callback, false);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Normal, false);
         // Add protocol
         lcsf_core.add_protocol(0xab, &TEST_PROT_DESC, dummy_prot_callback);
         // Check values
@@ -271,7 +291,7 @@ mod tests {
         let callback = lcsf_core.prot_cb_map.get(&0xab).unwrap();
         assert_eq!(**prot_desc, *TEST_PROT_DESC);
         if *callback != dummy_prot_callback as ProtCallback {
-            panic!("Invalid callback pointer");
+            panic!("Invalid tx callback pointer");
         }
     }
 
@@ -287,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_receive_buff() {
-        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, dummy_send_callback, false);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Add protocol
         lcsf_core.add_protocol(0xab, &TEST_PROT_DESC, test_prot_callback);
         // Test function
@@ -297,24 +317,14 @@ mod tests {
         assert!(is_valid);
     }
 
-    static BUFF_IS_VALID: AtomicBool = AtomicBool::new(false);
-
-    fn test_send_callback(buff: &[u8]) {
-        if buff == *TEST_BUFF {
-            BUFF_IS_VALID.store(true, Ordering::SeqCst);
-        }
-    }
-
     #[test]
     fn test_send_cmd() {
-        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, test_send_callback, false);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Add protocol
         lcsf_core.add_protocol(0xab, &TEST_PROT_DESC, dummy_prot_callback);
         // Test function
-        BUFF_IS_VALID.store(false, Ordering::SeqCst);
-        lcsf_core.send_cmd(0xab, &TEST_VALID_CMD);
-        let is_valid: bool = BUFF_IS_VALID.load(Ordering::SeqCst);
-        assert!(is_valid);
+        let buff = lcsf_core.send_cmd(0xab, &TEST_VALID_CMD);
+        assert_eq!(buff, *TEST_BUFF);
     }
 
     static ERR_IS_VALID: AtomicBool = AtomicBool::new(false);
@@ -331,11 +341,11 @@ mod tests {
         // Test data
         let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02];
 
-        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, dummy_send_callback, false);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Use default error callback
         assert!(lcsf_core.receive_buff(&err_buff));
         // Update the error callback
-        lcsf_core.update_err_cb(test_err_callback);
+        lcsf_core.update_err_cb(test_err_callback, dummy_send_callback);
         // Send buffer
         assert!(lcsf_core.receive_buff(&err_buff));
         // Check value
@@ -360,7 +370,8 @@ mod tests {
         let bad_format_buff: Vec<u8> = vec![0xab, 0x12, 0x05];
         let bad_prot_id_buff: Vec<u8> = vec![0x55, 0x01, 0x00];
 
-        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, test_bad_data_callback, true);
+        let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, true);
+        lcsf_core.update_err_cb(dummy_prot_callback, test_bad_data_callback);
         // Send buffer
         assert!(!lcsf_core.receive_buff(&bad_format_buff));
         // Check value
@@ -375,17 +386,15 @@ mod tests {
 
     #[test]
     fn test_send_raw() {
-        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, test_send_callback, false);
+        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Test function
-        BUFF_IS_VALID.store(false, Ordering::SeqCst);
-        lcsf_core.send_raw(&TEST_RAW_CMD);
-        let is_valid: bool = BUFF_IS_VALID.load(Ordering::SeqCst);
-        assert!(is_valid);
+        let buff = lcsf_core.send_raw(&TEST_RAW_CMD);
+        assert_eq!(buff, *TEST_BUFF);
     }
 
     #[test]
     fn test_receive_raw() {
-        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, dummy_send_callback, false);
+        let lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Test function
         let raw_msg = lcsf_core.receive_raw(&TEST_BUFF).unwrap();
         assert_eq!(raw_msg, *TEST_RAW_CMD);
