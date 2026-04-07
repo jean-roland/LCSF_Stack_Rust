@@ -263,20 +263,20 @@ mod tests {
         // Check current callback
         let err_prot_id = lcsf_error::LCSF_EP_PROT_ID_NORMAL;
         let mut error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
-        if *error_callback != def_process_error as ProtCallback {
+        if !std::ptr::fn_addr_eq(*error_callback, def_process_error as ProtCallback) {
             panic!("Invalid rx callback pointer");
         }
-        if lcsf_core.fn_send_err != def_send_error {
+        if !std::ptr::fn_addr_eq(lcsf_core.fn_send_err, def_send_error as for<'a> fn(&'a [u8])) {
             panic!("Invalid tx callback pointer");
         }
         // Update the error callback
         lcsf_core.update_err_cb(dummy_prot_callback, dummy_send_callback);
         // Assert that the error callback is updated correctly
         error_callback = lcsf_core.prot_cb_map.get(&err_prot_id).unwrap();
-        if *error_callback != dummy_prot_callback as ProtCallback {
+        if !std::ptr::fn_addr_eq(*error_callback, dummy_prot_callback as ProtCallback) {
             panic!("Invalid rx callback pointer");
         }
-        if lcsf_core.fn_send_err != dummy_send_callback {
+        if !std::ptr::fn_addr_eq(lcsf_core.fn_send_err, dummy_send_callback as for<'a> fn(&'a [u8])) {
             panic!("Invalid tx callback pointer");
         }
     }
@@ -290,7 +290,7 @@ mod tests {
         let prot_desc = lcsf_core.prot_desc_map.get(&0xab).unwrap();
         let callback = lcsf_core.prot_cb_map.get(&0xab).unwrap();
         assert_eq!(**prot_desc, *TEST_PROT_DESC);
-        if *callback != dummy_prot_callback as ProtCallback {
+        if !std::ptr::fn_addr_eq(*callback, dummy_prot_callback as ProtCallback) {
             panic!("Invalid tx callback pointer");
         }
     }
