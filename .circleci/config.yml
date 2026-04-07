@@ -3,9 +3,31 @@ version: 2.1
 jobs:
   run-ci:
     docker:
-      - image: cimg/rust:1.72.0
+      - image: cimg/rust:1.85.0
     steps:
       - checkout
+
+      # Install LCSF Generator dependencies
+      - run:
+          name: Install CMake and Ninja
+          command: sudo apt-get update && sudo apt-get install -y cmake ninja-build qtbase5-dev
+
+      # Clone LCSF Generator
+      - run:
+          name: Clone LCSF Generator
+          command: |
+            cd ..
+            git clone git@github.com:jean-roland/LCSF_Generator.git
+
+      # Build the LCSF Generator
+      - run:
+          name: Build LCSF Generator
+          command: |
+            cd ../LCSF_Generator
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+            cmake --build build
+
+      # Standard Rust Pipeline
       - run: cargo build
       - run: cargo test
       - run: cargo fmt --check
