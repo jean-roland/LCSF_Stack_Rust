@@ -7,7 +7,7 @@
 
 use crate::lcsf_lib::lcsf_core;
 use crate::lcsf_lib::lcsf_validator;
-use crate::lcsf_prot::lcsf_protocol_test;
+use crate::lcsf_prot::lcsf_protocol_test_a;
 use lcsf_core::LcsfCore;
 use lcsf_validator::LcsfValidCmd;
 use std::ffi::CString;
@@ -26,6 +26,7 @@ lazy_static! {
     /// Static LcsfCore reference to handle lcsf message processing
     static ref SEND_CB_MUTEX: Mutex<SendCallback> = Mutex::new(def_send);
 }
+
 
 /// Command enum
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -230,6 +231,7 @@ pub struct Ca11AttCa12Payload {
 // --- Custom definitions ---
 
 // Command execution functions, customize as you need
+
 fn execute_sc2() -> (CmdEnum, CmdPayload) {
     // Send sc1
     (CmdEnum::Sc1, CmdPayload::Empty)
@@ -538,8 +540,8 @@ fn execute_cmd(cmd_name: CmdEnum, cmd_payload: &CmdPayload) -> (CmdEnum, CmdPayl
 pub fn init_protocol(core: &mut LcsfCore, send_cb: SendCallback) {
     // Add protocol to LcsfCore
     core.add_protocol(
-        lcsf_protocol_test::PROT_ID,
-        &lcsf_protocol_test::PROT_DESC,
+        lcsf_protocol_test_a::PROT_ID,
+        &lcsf_protocol_test_a::PROT_DESC,
         process_cmd,
     );
     *SEND_CB_MUTEX.lock().unwrap() = send_cb;
@@ -550,12 +552,12 @@ pub fn init_protocol(core: &mut LcsfCore, send_cb: SendCallback) {
 /// valid_cmd: received valid command
 fn process_cmd(core: &LcsfCore, valid_cmd: &LcsfValidCmd) {
     // Process received command
-    let (mut cmd_name, mut cmd_payload) = lcsf_protocol_test::receive_cmd(valid_cmd);
+    let (mut cmd_name, mut cmd_payload) = lcsf_protocol_test_a::receive_cmd(valid_cmd);
     (cmd_name, cmd_payload) = execute_cmd(cmd_name, &cmd_payload);
     // Send instant reply from execute functions
     // Customize as needed
-    let valid_cmd = lcsf_protocol_test::send_cmd(cmd_name, &cmd_payload);
-    let buff = core.send_cmd(lcsf_protocol_test::PROT_ID, &valid_cmd);
+    let valid_cmd = lcsf_protocol_test_a::send_cmd(cmd_name, &cmd_payload);
+    let buff = core.send_cmd(lcsf_protocol_test_a::PROT_ID, &valid_cmd);
     let send_cb = *SEND_CB_MUTEX.lock().unwrap();
     send_cb(&buff);
 }
