@@ -27,7 +27,6 @@ lazy_static! {
     static ref SEND_CB_MUTEX: Mutex<SendCallback> = Mutex::new(def_send);
 }
 
-
 /// Command enum
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum CmdEnum {

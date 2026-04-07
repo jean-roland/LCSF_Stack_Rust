@@ -266,7 +266,10 @@ mod tests {
         if !std::ptr::fn_addr_eq(*error_callback, def_process_error as ProtCallback) {
             panic!("Invalid rx callback pointer");
         }
-        if !std::ptr::fn_addr_eq(lcsf_core.fn_send_err, def_send_error as for<'a> fn(&'a [u8])) {
+        if !std::ptr::fn_addr_eq(
+            lcsf_core.fn_send_err,
+            def_send_error as for<'a> fn(&'a [u8]),
+        ) {
             panic!("Invalid tx callback pointer");
         }
         // Update the error callback
@@ -276,7 +279,10 @@ mod tests {
         if !std::ptr::fn_addr_eq(*error_callback, dummy_prot_callback as ProtCallback) {
             panic!("Invalid rx callback pointer");
         }
-        if !std::ptr::fn_addr_eq(lcsf_core.fn_send_err, dummy_send_callback as for<'a> fn(&'a [u8])) {
+        if !std::ptr::fn_addr_eq(
+            lcsf_core.fn_send_err,
+            dummy_send_callback as for<'a> fn(&'a [u8]),
+        ) {
             panic!("Invalid tx callback pointer");
         }
     }
