@@ -8,4 +8,4 @@
 //! along with this program. If not, see <https://www.gnu.org/licenses/>
 
 pub mod lcsf_protocol_test;
-pub mod protocol_test;
+pub mod protocol_test_a;

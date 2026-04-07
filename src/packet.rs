@@ -11,7 +11,7 @@ use crate::lcsf_lib::lcsf_core;
 use crate::lcsf_lib::lcsf_error;
 use crate::lcsf_lib::lcsf_transcoder;
 use crate::lcsf_lib::lcsf_validator;
-use crate::lcsf_prot::protocol_test;
+use crate::lcsf_prot::protocol_test_a;
 use lazy_static::lazy_static;
 use lcsf_core::LcsfCore;
 use lcsf_transcoder::LcsfModeEnum;
@@ -49,7 +49,7 @@ pub fn example_use_gen() {
     let mut mut_core = CORE.write().unwrap();
 
     // Init protocols in core
-    protocol_test::init_protocol(&mut mut_core, example_send);
+    protocol_test_a::init_protocol(&mut mut_core, example_send);
     // (Add more protocols here)
 
     // Update err callbacks (optional, only if you want to handle error message)
@@ -531,7 +531,7 @@ mod tests {
     fn test_fullstack() {
         // Init protocol
         let mut mut_core = TEST_CORE.write().unwrap();
-        protocol_test::init_protocol(&mut mut_core, test_send);
+        protocol_test_a::init_protocol(&mut mut_core, test_send);
         mut_core.update_err_cb(test_err_cb, test_send);
         drop(mut_core);
         let core = TEST_CORE.read().unwrap();
