@@ -228,7 +228,6 @@ pub struct Ca11AttCa12Payload {
 }
 
 // --- Custom definitions ---
-
 // Command execution functions, customize as you need
 
 fn execute_sc2() -> (CmdEnum, CmdPayload) {
