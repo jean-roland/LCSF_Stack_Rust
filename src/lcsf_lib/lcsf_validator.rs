@@ -182,9 +182,11 @@ fn validate_att_rec(
             return Err(LcsfValidateErrorEnum::WrongAttDataType);
         }
         // Note data and data size
-        if let LcsfRawAttPayload::Data(rx_data) = &rx_att.payload && let LcsfValidAttPayload::Data(valid_data) = &mut valid_att.payload {
-                *valid_data = rx_data.clone();
-                local_payload_size = rx_data.len();
+        if let LcsfRawAttPayload::Data(rx_data) = &rx_att.payload
+            && let LcsfValidAttPayload::Data(valid_data) = &mut valid_att.payload
+        {
+            *valid_data = rx_data.clone();
+            local_payload_size = rx_data.len();
         };
     }
     Ok((local_payload_size, valid_att))

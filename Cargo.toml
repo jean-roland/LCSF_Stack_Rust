@@ -2,7 +2,7 @@
 name = "lcsf_stack_rust"
 version = "0.1.0"
 authors = ["Jean-Roland Gosse <jean.roland.gosse@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "LGPL-2.1-only"
 description = "A Rust implementation of the LCSF Stack"
 readme = "README.md"

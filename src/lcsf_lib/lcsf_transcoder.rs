@@ -126,7 +126,7 @@ fn fetch_att_header(
             let byte1 = *buff_iter.next()? as u16;
             att.has_subatt = (byte1 & (1 << 7)) != 0; // Retrieve the flag
             att_id = byte1 & !(1 << 7); // Mask the flag from the id
-                                        // Byte 2: Payload size
+            // Byte 2: Payload size
             att.payload_size = *buff_iter.next()? as u16;
         }
         LcsfModeEnum::Normal => {
@@ -136,7 +136,7 @@ fn fetch_att_header(
             let byte2 = *buff_iter.next()? as u16;
             att.has_subatt = (byte2 & (1 << 7)) != 0; // Retrieve the flag
             att_id += (byte2 & !(1 << 7)) << 8; // Mask the flag from the id
-                                                // Byte 3: Payload size LSB
+            // Byte 3: Payload size LSB
             att.payload_size = *buff_iter.next()? as u16;
             // Byte 4: Payload size MSB
             att.payload_size += (*buff_iter.next()? as u16) << 8;
