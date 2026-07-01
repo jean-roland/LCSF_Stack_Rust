@@ -173,7 +173,8 @@ impl LcsfCore {
         let cmd_desc_map: HashMap<u16, LcsfCmdDesc> =
             prot_desc.cmd_desc_arr.iter().cloned().collect();
         let cmd_desc = cmd_desc_map.get(&valid_cmd.cmd_id).unwrap();
-        let raw_msg = lcsf_validator::encode_valid(prot_id, cmd_desc, valid_cmd).unwrap();
+        let raw_msg =
+            lcsf_validator::encode_valid(prot_id, prot_desc.prot_ver, cmd_desc, valid_cmd).unwrap();
         // Return buffer
         lcsf_transcoder::encode_buff(self.lcsf_mode, &raw_msg)
     }
@@ -224,6 +225,7 @@ mod tests {
 
     lazy_static! {
         static ref TEST_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
+            prot_ver: 1,
             cmd_desc_arr: vec![(
                 0x12,
                 LcsfCmdDesc {
@@ -237,11 +239,12 @@ mod tests {
         };
         static ref TEST_RAW_CMD: LcsfRawMsg = LcsfRawMsg {
             prot_id: 0xab,
+            prot_ver: 1,
             cmd_id: 0x12,
             att_nb: 0,
             att_arr: Vec::new(),
         };
-        static ref TEST_BUFF: Vec<u8> = vec![0xab, 0x12, 0x00];
+        static ref TEST_BUFF: Vec<u8> = vec![0xab, 0x01, 0x12, 0x00];
     }
 
     #[test]
@@ -345,7 +348,7 @@ mod tests {
     #[test]
     fn test_error_processing() {
         // Test data
-        let err_buff: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02];
+        let err_buff: Vec<u8> = vec![0xff, 0x00, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02];
 
         let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Use default error callback
@@ -362,8 +365,9 @@ mod tests {
     static BAD_DATA_IS_VALID: AtomicBool = AtomicBool::new(false);
 
     fn test_bad_data_callback(buff: &[u8]) {
-        let bad_data: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x00];
-        let unknwn_prot_id: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00];
+        let bad_data: Vec<u8> = vec![0xff, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x01, 0x01, 0x00];
+        let unknwn_prot_id: Vec<u8> =
+            vec![0xff, 0x00, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00];
 
         if buff == bad_data || buff == unknwn_prot_id {
             BAD_DATA_IS_VALID.store(true, Ordering::SeqCst);
@@ -373,8 +377,8 @@ mod tests {
     #[test]
     fn test_error_encoding() {
         // Test data
-        let bad_format_buff: Vec<u8> = vec![0xab, 0x12, 0x05];
-        let bad_prot_id_buff: Vec<u8> = vec![0x55, 0x01, 0x00];
+        let bad_format_buff: Vec<u8> = vec![0xab, 0x01, 0x12, 0x05];
+        let bad_prot_id_buff: Vec<u8> = vec![0x55, 0x01, 0x01, 0x00];
 
         let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, true);
         lcsf_core.update_err_cb(dummy_prot_callback, test_bad_data_callback);

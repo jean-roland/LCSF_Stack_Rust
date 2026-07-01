@@ -26,6 +26,8 @@ use lcsf_validator::LcsfValidCmd;
 pub const LCSF_EP_PROT_ID_NORMAL: u16 = 0xFFFF;
 /// Lcsf ep normal mode protocol id
 pub const LCSF_EP_PROT_ID_SMALL: u16 = 0x00FF;
+/// Lcsf ep protocol version
+pub const LCSF_EP_PROT_VER: u16 = 0x00;
 
 /// Lcsf ep attribute location values
 pub enum LcsfEpLocEnum {
@@ -36,6 +38,7 @@ pub enum LcsfEpLocEnum {
 lazy_static! {
     /// Lcsf ep protocol description
     pub static ref LCSF_EP_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
+        prot_ver: LCSF_EP_PROT_VER,
         cmd_desc_arr: vec![(
             0x00,
             LcsfCmdDesc {
@@ -84,6 +87,7 @@ pub fn encode_error(lcsf_mode: LcsfModeEnum, error_loc: LcsfEpLocEnum, error_typ
     // Create raw message
     let error_msg = LcsfRawMsg {
         prot_id,
+        prot_ver: LCSF_EP_PROT_VER,
         cmd_id: LCSF_EP_ERR_CMD_ID,
         att_nb: LCSF_EP_ERR_CMD_ATT_NB,
         att_arr: vec![
@@ -146,6 +150,7 @@ pub fn process_error(valid_cmd: &LcsfValidCmd) -> (&str, &str) {
                 3 => "Too many attributes received",
                 4 => "Missing mandatory attribute",
                 5 => "Wrong attribute data type",
+                6 => "Bad protocol version",
                 _ => "Unknown",
             };
         }
@@ -169,10 +174,10 @@ mod tests {
     #[test]
     fn test_encode_error() {
         // Test data
-        let buff_small: Vec<u8> = vec![0xff, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x05];
+        let buff_small: Vec<u8> = vec![0xff, 0x00, 0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x01, 0x05];
         let buff_normal: Vec<u8> = vec![
-            0xff, 0xff, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01,
-            0x00, 0x00,
+            0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01,
+            0x00, 0x01, 0x00, 0x00,
         ];
         assert_eq!(
             buff_small,
@@ -286,7 +291,7 @@ mod tests {
         });
         (loc_str, type_str) = process_error(&valid_cmd);
         assert_eq!(loc_str, "Validator");
-        assert_eq!(type_str, "Unknown");
+        assert_eq!(type_str, "Bad protocol version");
 
         valid_cmd = LcsfValidCmd {
             cmd_id: LCSF_EP_ERR_CMD_ID,

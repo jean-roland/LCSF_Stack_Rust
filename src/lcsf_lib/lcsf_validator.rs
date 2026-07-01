@@ -48,6 +48,7 @@ pub struct LcsfCmdDesc {
 /// Lcsf protocol descriptor structure
 #[derive(Debug, PartialEq)]
 pub struct LcsfProtDesc {
+    pub prot_ver: u16,
     pub cmd_desc_arr: Vec<(u16, LcsfCmdDesc)>,
 }
 
@@ -86,6 +87,8 @@ pub enum LcsfValidateErrorEnum {
     MissMandatoryAtt = 0x04,
     /// Wrong attribute data type
     WrongAttDataType = 0x05,
+    /// Protocol version mismatch
+    BadProtVer = 0x06,
 }
 
 // *** Validate raw ***
@@ -210,6 +213,10 @@ pub fn validate_msg(
         None => return Err(LcsfValidateErrorEnum::UnknownProtId),
         Some(desc) => desc,
     };
+    // Check protocol version matches
+    if rx_msg.prot_ver != prot_desc.prot_ver {
+        return Err(LcsfValidateErrorEnum::BadProtVer);
+    }
     // Check command id valid
     let cmd_desc_map: HashMap<u16, LcsfCmdDesc> = prot_desc.cmd_desc_arr.iter().cloned().collect();
     let cmd_desc = match cmd_desc_map.get(&rx_msg.cmd_id) {
@@ -378,17 +385,21 @@ fn fill_att_rec(att_desc: &LcsfAttDesc, valid_att: &LcsfValidAtt) -> Option<Lcsf
 ///
 /// prot_id: protocol id
 ///
+/// prot_ver: protocol version
+///
 /// cmd_desc: command descriptor reference
 ///
 /// valid_cmd: valid command reference
 pub fn encode_valid(
     prot_id: u16,
+    prot_ver: u16,
     cmd_desc: &LcsfCmdDesc,
     valid_cmd: &LcsfValidCmd,
 ) -> Option<LcsfRawMsg> {
     // Init raw message
     let mut raw_msg = LcsfRawMsg {
         prot_id,
+        prot_ver,
         cmd_id: valid_cmd.cmd_id,
         att_nb: cnt_non_empty_att(&valid_cmd.att_arr),
         att_arr: Vec::new(),
@@ -554,6 +565,7 @@ mod tests {
             HashMap::from([(0xab as u16, &TEST_PROT_DESC as &LcsfProtDesc)]);
         let mut bad_msg = LcsfRawMsg {
             prot_id: 0,
+            prot_ver: 1,
             cmd_id: 0,
             att_nb: 4,
             att_arr: vec![
@@ -597,6 +609,12 @@ mod tests {
             Err(err) => assert_eq!(err, LcsfValidateErrorEnum::UnknownProtId),
         }
         bad_msg.prot_id = 0xab;
+        bad_msg.prot_ver = 0xff;
+        match validate_msg(&prot_desc_map, &bad_msg) {
+            Ok(_) => panic!("validate_msg should fail"),
+            Err(err) => assert_eq!(err, LcsfValidateErrorEnum::BadProtVer),
+        }
+        bad_msg.prot_ver = 1;
         match validate_msg(&prot_desc_map, &bad_msg) {
             Ok(_) => panic!("validate_msg should fail"),
             Err(err) => assert_eq!(err, LcsfValidateErrorEnum::UnknownCmdId),
@@ -791,12 +809,12 @@ mod tests {
             att_arr: Vec::new(),
         };
         // Test error
-        match encode_valid(0xab, &TEST_PROT_DESC.cmd_desc_arr[0].1, &bad_cmd) {
+        match encode_valid(0xab, 1, &TEST_PROT_DESC.cmd_desc_arr[0].1, &bad_cmd) {
             Some(_) => panic!("fill_att_rec should fail"),
             None => {}
         }
         // Test valid
-        match encode_valid(0xab, &TEST_PROT_DESC.cmd_desc_arr[0].1, &TEST_VALID_CMD) {
+        match encode_valid(0xab, 1, &TEST_PROT_DESC.cmd_desc_arr[0].1, &TEST_VALID_CMD) {
             None => panic!("encode_valid should not fail"),
             Some(raw_msg) => assert_eq!(raw_msg, *TEST_RAW_MSG),
         }
@@ -942,6 +960,7 @@ mod tests {
     // Tests data
     lazy_static! {
         static ref TEST_PROT_DESC: LcsfProtDesc = LcsfProtDesc {
+            prot_ver: 1,
             cmd_desc_arr: vec![(
                 0x12,
                 LcsfCmdDesc {
@@ -1026,6 +1045,7 @@ mod tests {
         };
         static ref TEST_RAW_MSG: LcsfRawMsg = LcsfRawMsg {
             prot_id: 0xab,
+            prot_ver: 1,
             cmd_id: 0x12,
             att_nb: 3,
             att_arr: vec![

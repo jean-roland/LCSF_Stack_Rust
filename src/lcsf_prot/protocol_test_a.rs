@@ -564,6 +564,11 @@ fn process_cmd(core: &LcsfCore, valid_cmd: &LcsfValidCmd) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::lcsf_lib::lcsf_validator::{LcsfValidAtt, LcsfValidAttPayload};
+    use crate::lcsf_prot::lcsf_protocol_test_a::{
+        CMD_ID_CC1, CMD_ID_CC2, CMD_ID_CC3, CMD_ID_CC4, CMD_ID_CC5, CMD_ID_CC6, CMD_ID_SC1,
+        CMD_ID_SC2, CMD_ID_SC3,
+    };
 
     #[test]
     fn test_execute_cmd() {
@@ -756,5 +761,575 @@ mod tests {
         (cmd_name, cmd_payload) = execute_cmd(CmdEnum::Cc6, &CmdPayload::Cc6Payload(cc6_payload));
         assert_eq!(cmd_name, CmdEnum::Cc6);
         assert_eq!(cmd_payload, CmdPayload::Cc6Payload(cc6u_payload));
+    }
+
+    #[test]
+    fn test_receive_cmd() {
+        let cc2_payload = Cc2AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: false,
+            is_sa8_here: true,
+            is_sa9_here: true,
+            is_sa10_here: true,
+            sa1: 0,
+            sa2: 2000,
+            sa3: 100000,
+            sa4: vec![5, 4, 3, 2, 1],
+            sa5: CString::new("Bob").unwrap(),
+            sa6: 3,
+            sa7: 0,
+            sa8: 149999,
+            sa9: vec![1, 2, 3, 4, 5],
+            sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
+        };
+        let cc3_payload = Cc3AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: true,
+            is_sa8_here: true,
+            is_sa9_here: false,
+            is_sa10_here: true,
+            sa1: 0,
+            sa2: 2000,
+            sa3: 100000,
+            sa4: vec![5, 4, 3, 2, 1],
+            sa5: CString::new("Bob").unwrap(),
+            sa6: 3,
+            sa7: 4000,
+            sa8: 149999,
+            sa9: Vec::new(),
+            sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
+        };
+        let cc5_payload = Cc5AttPayload {
+            is_ca6_here: true,
+            sa2: 255,
+            ca5_payload: Cc5AttCa5Payload {
+                is_sa3_here: false,
+                sa1: 1,
+                sa2: 2000,
+                sa3: 0,
+            },
+            ca6_payload: Cc5AttCa6Payload {
+                is_sa1_here: false,
+                sa1: 0,
+                ca7_payload: Ca6AttCa7Payload {
+                    is_sa1_here: true,
+                    sa1: 3,
+                    ca8_payload: Ca7AttCa8Payload {
+                        sa4: vec![10, 20, 30, 40, 50],
+                    },
+                },
+            },
+        };
+        let cc6_payload = Cc6AttPayload {
+            is_ca10_here: true,
+            sa4: vec![3, 3],
+            ca9_payload: Cc6AttCa9Payload {
+                is_sa3_here: false,
+                sa1: 1,
+                sa2: 2000,
+                sa3: 0,
+            },
+            ca10_payload: Cc6AttCa10Payload {
+                is_sa1_here: false,
+                sa1: 0,
+                ca11_payload: Ca10AttCa11Payload {
+                    is_sa1_here: true,
+                    sa1: 3,
+                    ca12_payload: Ca11AttCa12Payload {
+                        sa4: vec![5, 5, 5, 5, 5],
+                    },
+                },
+            },
+        };
+        let valid_sc2_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC2,
+            att_arr: Vec::new(),
+        };
+        let valid_sc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC3,
+            att_arr: Vec::new(),
+        };
+        let valid_cc2_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC2,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x86, 0x01, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![5, 4, 3, 2, 1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x42, 0x6f, 0x62, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xef, 0x49, 0x02, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![1, 2, 3, 4, 5]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
+                },
+            ],
+        };
+        let valid_cc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC3,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x86, 0x01, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![5, 4, 3, 2, 1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x42, 0x6f, 0x62, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x0f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xef, 0x49, 0x02, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
+                },
+            ],
+        };
+        let valid_cc5_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC5,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xff, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![1]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![3]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![
+                                            10, 20, 30, 40, 50,
+                                        ]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
+        let valid_cc6_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC6,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3, 3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![1]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![3]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![5, 5, 5, 5, 5]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
+        let (mut cmd_name, mut payload) = lcsf_protocol_test_a::receive_cmd(&valid_sc2_cmd);
+        assert_eq!(cmd_name, CmdEnum::Sc2);
+        assert_eq!(payload, CmdPayload::Empty);
+        (cmd_name, payload) = lcsf_protocol_test_a::receive_cmd(&valid_sc3_cmd);
+        assert_eq!(cmd_name, CmdEnum::Sc3);
+        assert_eq!(payload, CmdPayload::Empty);
+        (cmd_name, payload) = lcsf_protocol_test_a::receive_cmd(&valid_cc2_cmd);
+        assert_eq!(cmd_name, CmdEnum::Cc2);
+        assert_eq!(payload, CmdPayload::Cc2Payload(cc2_payload));
+        (cmd_name, payload) = lcsf_protocol_test_a::receive_cmd(&valid_cc3_cmd);
+        assert_eq!(cmd_name, CmdEnum::Cc3);
+        assert_eq!(payload, CmdPayload::Cc3Payload(cc3_payload));
+        (cmd_name, payload) = lcsf_protocol_test_a::receive_cmd(&valid_cc5_cmd);
+        assert_eq!(cmd_name, CmdEnum::Cc5);
+        assert_eq!(payload, CmdPayload::Cc5Payload(cc5_payload));
+        (cmd_name, payload) = lcsf_protocol_test_a::receive_cmd(&valid_cc6_cmd);
+        assert_eq!(cmd_name, CmdEnum::Cc6);
+        assert_eq!(payload, CmdPayload::Cc6Payload(cc6_payload));
+    }
+
+    #[test]
+    fn test_send_cmd() {
+        let cc1_payload = Cc1AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: false,
+            is_sa8_here: true,
+            is_sa9_here: true,
+            is_sa10_here: true,
+            sa1: 1,
+            sa2: 2001,
+            sa3: 100001,
+            sa4: vec![6, 5, 4, 3, 2],
+            sa5: CString::new("Cpc").unwrap(),
+            sa6: 4,
+            sa7: 4001,
+            sa8: 150000,
+            sa9: vec![2, 3, 4, 5, 6],
+            sa10: CString::new("Qbvm").unwrap(),
+            sa11: 5000000001,
+            sa12: 2.61803398875,
+            sa13: 4.14159265359,
+        };
+        let cc3_payload = Cc3AttPayload {
+            is_sa6_here: true,
+            is_sa7_here: true,
+            is_sa8_here: true,
+            is_sa9_here: false,
+            is_sa10_here: true,
+            sa1: 0,
+            sa2: 2000,
+            sa3: 100000,
+            sa4: vec![5, 4, 3, 2, 1],
+            sa5: CString::new("Bob").unwrap(),
+            sa6: 3,
+            sa7: 4000,
+            sa8: 149999,
+            sa9: Vec::new(),
+            sa10: CString::new("Paul").unwrap(),
+            sa11: 5000000000,
+            sa12: 1.61803398875,
+            sa13: 3.14159265359,
+        };
+        let cc4_payload = Cc4AttPayload {
+            is_ca2_here: true,
+            sa1: 0,
+            ca1_payload: Cc4AttCa1Payload {
+                is_sa3_here: false,
+                sa1: 2,
+                sa2: 2001,
+                sa3: 100001,
+            },
+            ca2_payload: Cc4AttCa2Payload {
+                is_sa1_here: false,
+                sa1: 3,
+                ca3_payload: Ca2AttCa3Payload {
+                    is_sa1_here: true,
+                    sa1: 4,
+                    ca4_payload: Ca3AttCa4Payload {
+                        sa4: vec![11, 21, 31, 41, 51],
+                    },
+                },
+            },
+        };
+        let cc6_payload = Cc6AttPayload {
+            is_ca10_here: true,
+            sa4: vec![3, 3],
+            ca9_payload: Cc6AttCa9Payload {
+                is_sa3_here: false,
+                sa1: 1,
+                sa2: 2000,
+                sa3: 0,
+            },
+            ca10_payload: Cc6AttCa10Payload {
+                is_sa1_here: false,
+                sa1: 0,
+                ca11_payload: Ca10AttCa11Payload {
+                    is_sa1_here: true,
+                    sa1: 3,
+                    ca12_payload: Ca11AttCa12Payload {
+                        sa4: vec![5, 5, 5, 5, 5],
+                    },
+                },
+            },
+        };
+        let valid_sc1_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC1,
+            att_arr: Vec::new(),
+        };
+        let valid_sc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_SC3,
+            att_arr: Vec::new(),
+        };
+        let valid_cc1_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC1,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd1, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa1, 0x86, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![6, 5, 4, 3, 2]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x43, 0x70, 0x63, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![4]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xf0, 0x49, 0x02]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![2, 3, 4, 5, 6]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x51, 0x62, 0x76, 0x6d, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x01, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xde, 0x8d, 0x27, 0x40]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0x75, 0x17, 0x22, 0xaa, 0xfd, 0x90, 0x10, 0x40,
+                    ]),
+                },
+            ],
+        };
+        let valid_cc3_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC3,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x86, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![5, 4, 3, 2, 1]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x42, 0x6f, 0x62, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xa0, 0x0f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xef, 0x49, 0x02]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(Vec::new()),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x50, 0x61, 0x75, 0x6c, 0x00]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0x00, 0xf2, 0x05, 0x2a, 0x01]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0xbd, 0x1b, 0xcf, 0x3f]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![
+                        0xea, 0x2e, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                    ]),
+                },
+            ],
+        };
+        let valid_cc4_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC4,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![0]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![2]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd1, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![4]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![
+                                            11, 21, 31, 41, 51,
+                                        ]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
+        let valid_cc6_cmd = LcsfValidCmd {
+            cmd_id: CMD_ID_CC6,
+            att_arr: vec![
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::Data(vec![3, 3]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![1]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(vec![0xd0, 0x07]),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                    ]),
+                },
+                LcsfValidAtt {
+                    payload: LcsfValidAttPayload::SubattArr(vec![
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::Data(Vec::new()),
+                        },
+                        LcsfValidAtt {
+                            payload: LcsfValidAttPayload::SubattArr(vec![
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::Data(vec![3]),
+                                },
+                                LcsfValidAtt {
+                                    payload: LcsfValidAttPayload::SubattArr(vec![LcsfValidAtt {
+                                        payload: LcsfValidAttPayload::Data(vec![5, 5, 5, 5, 5]),
+                                    }]),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        };
+        let mut valid_cmd = lcsf_protocol_test_a::send_cmd(CmdEnum::Sc1, &CmdPayload::Empty);
+        assert_eq!(valid_cmd, valid_sc1_cmd);
+        valid_cmd = lcsf_protocol_test_a::send_cmd(CmdEnum::Sc3, &CmdPayload::Empty);
+        assert_eq!(valid_cmd, valid_sc3_cmd);
+        valid_cmd =
+            lcsf_protocol_test_a::send_cmd(CmdEnum::Cc1, &CmdPayload::Cc1Payload(cc1_payload));
+        assert_eq!(valid_cmd, valid_cc1_cmd);
+        valid_cmd =
+            lcsf_protocol_test_a::send_cmd(CmdEnum::Cc3, &CmdPayload::Cc3Payload(cc3_payload));
+        assert_eq!(valid_cmd, valid_cc3_cmd);
+        valid_cmd =
+            lcsf_protocol_test_a::send_cmd(CmdEnum::Cc4, &CmdPayload::Cc4Payload(cc4_payload));
+        assert_eq!(valid_cmd, valid_cc4_cmd);
+        valid_cmd =
+            lcsf_protocol_test_a::send_cmd(CmdEnum::Cc6, &CmdPayload::Cc6Payload(cc6_payload));
+        assert_eq!(valid_cmd, valid_cc6_cmd);
     }
 }

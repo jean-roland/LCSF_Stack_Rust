@@ -54,6 +54,8 @@ pub struct LcsfRawAtt {
 pub struct LcsfRawMsg {
     /// Protocol id
     pub prot_id: u16,
+    /// Protocol version
+    pub prot_ver: u16,
     /// Command id
     pub cmd_id: u16,
     /// Number of attributes
@@ -72,6 +74,7 @@ pub struct LcsfRawMsg {
 fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option<LcsfRawMsg> {
     let mut msg = LcsfRawMsg {
         prot_id: 0,
+        prot_ver: 0,
         cmd_id: 0,
         att_nb: 0,
         att_arr: Vec::new(),
@@ -81,9 +84,11 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
         LcsfModeEnum::Small => {
             // Byte 1: Protocol id
             msg.prot_id = *buff_iter.next()? as u16;
-            // Byte 2: Command id
+            // Byte 2: Protocol version
+            msg.prot_ver = *buff_iter.next()? as u16;
+            // Byte 3: Command id
             msg.cmd_id = *buff_iter.next()? as u16;
-            // Byte 3: Attribute number
+            // Byte 4: Attribute number
             msg.att_nb = *buff_iter.next()? as u16;
         }
         LcsfModeEnum::Normal => {
@@ -91,13 +96,17 @@ fn fetch_msg_header(lcsf_mode: LcsfModeEnum, buff_iter: &mut Iter<u8>) -> Option
             msg.prot_id = *buff_iter.next()? as u16;
             // Byte 2: Protocol id MSB
             msg.prot_id += (*buff_iter.next()? as u16) << 8;
-            // Byte 3: Command id LSB
+            // Byte 3: Protocol version LSB
+            msg.prot_ver = *buff_iter.next()? as u16;
+            // Byte 4: Protocol version MSB
+            msg.prot_ver += (*buff_iter.next()? as u16) << 8;
+            // Byte 5: Command id LSB
             msg.cmd_id = *buff_iter.next()? as u16;
-            // Byte 4: Command id MSB
+            // Byte 6: Command id MSB
             msg.cmd_id += (*buff_iter.next()? as u16) << 8;
-            // Byte 5: Attribute Number LSB
+            // Byte 7: Attribute Number LSB
             msg.att_nb = *buff_iter.next()? as u16;
-            // Byte 6: Attribute Number MSB
+            // Byte 8: Attribute Number MSB
             msg.att_nb += (*buff_iter.next()? as u16) << 8;
         }
     }
@@ -227,9 +236,11 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
         LcsfModeEnum::Small => {
             // Byte 1: Protocol id
             buffer.push(msg.prot_id as u8);
-            // Byte 2: Command id
+            // Byte 2: Protocol version
+            buffer.push(msg.prot_ver as u8);
+            // Byte 3: Command id
             buffer.push(msg.cmd_id as u8);
-            // Byte 3: Attribute number
+            // Byte 4: Attribute number
             buffer.push(msg.att_nb as u8);
         }
         LcsfModeEnum::Normal => {
@@ -237,13 +248,17 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
             buffer.push(msg.prot_id as u8);
             // Byte 2: Protocol id MSB
             buffer.push((msg.prot_id >> 8) as u8);
-            // Byte 3: Command id LSB
+            // Byte 3: Protocol version LSB
+            buffer.push(msg.prot_ver as u8);
+            // Byte 4: Protocol version MSB
+            buffer.push((msg.prot_ver >> 8) as u8);
+            // Byte 5: Command id LSB
             buffer.push(msg.cmd_id as u8);
-            // Byte 4: Command id MSB
+            // Byte 6: Command id MSB
             buffer.push((msg.cmd_id >> 8) as u8);
-            // Byte 5: Attribute number LSB
+            // Byte 7: Attribute number LSB
             buffer.push(msg.att_nb as u8);
-            // Byte 6: Attribute number MSB
+            // Byte 8: Attribute number MSB
             buffer.push((msg.att_nb >> 8) as u8);
         }
     }
@@ -372,12 +387,12 @@ mod tests {
         assert_eq!(None, fetch_att_header(LcsfModeEnum::Small, &mut [].iter()));
         // Test small
         let (mut new_id, mut new_att) =
-            fetch_att_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL[3..].iter()).unwrap();
+            fetch_att_header(LcsfModeEnum::Small, &mut RX_MSG_SMALL[4..].iter()).unwrap();
         assert_eq!(new_att, att);
         assert_eq!(new_id, att_id);
         // Test normal
         (new_id, new_att) =
-            fetch_att_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL[6..].iter()).unwrap();
+            fetch_att_header(LcsfModeEnum::Normal, &mut RX_MSG_NORMAL[8..].iter()).unwrap();
         assert_eq!(new_att, att);
         assert_eq!(new_id, att_id);
     }
@@ -396,7 +411,7 @@ mod tests {
             Err(err) => assert_eq!(err, LcsfDecodeErrorEnum::FormatErr),
         }
         // Test small
-        let data_iter = &mut RX_MSG_SMALL[3..].iter();
+        let data_iter = &mut RX_MSG_SMALL[4..].iter();
         for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
             let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
             match decode_att_rec(LcsfModeEnum::Small, data_iter) {
@@ -408,7 +423,7 @@ mod tests {
             }
         }
         // Test normal
-        let data_iter = &mut RX_MSG_NORMAL[6..].iter();
+        let data_iter = &mut RX_MSG_NORMAL[8..].iter();
         for att_idx in 0..TEST_RAW_MSG.att_arr.len() {
             let (id, att) = &TEST_RAW_MSG.att_arr[att_idx];
             match decode_att_rec(LcsfModeEnum::Normal, data_iter) {
@@ -452,12 +467,12 @@ mod tests {
         // Test small
         assert_eq!(
             fill_msg_header(LcsfModeEnum::Small, &TEST_RAW_MSG),
-            vec![0xab, 0x12, 0x03]
+            vec![0xab, 0x01, 0x12, 0x03]
         );
         // Test normal
         assert_eq!(
             fill_msg_header(LcsfModeEnum::Normal, &TEST_RAW_MSG),
-            vec![0xab, 0x00, 0x12, 0x00, 0x03, 0x00]
+            vec![0xab, 0x00, 0x01, 0x00, 0x12, 0x00, 0x03, 0x00]
         );
     }
 
@@ -508,7 +523,7 @@ mod tests {
                 TEST_RAW_MSG.att_arr[1].0,
                 &TEST_RAW_MSG.att_arr[1].1
             ),
-            RX_MSG_SMALL[10..32]
+            RX_MSG_SMALL[11..33]
         );
         // Test normal
         assert_eq!(
@@ -517,7 +532,7 @@ mod tests {
                 TEST_RAW_MSG.att_arr[1].0,
                 &TEST_RAW_MSG.att_arr[1].1
             ),
-            RX_MSG_NORMAL[15..45]
+            RX_MSG_NORMAL[17..47]
         );
     }
 
@@ -537,21 +552,22 @@ mod tests {
 
     // Test data
     const RX_MSG_SMALL: &'static [u8] = &[
-        0xab, 0x12, 0x03, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0xff, 0x02, 0x30, 0x01, 0x0a,
-        0xb1, 0x01, 0x32, 0x0d, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69,
-        0x63, 0x00, 0x40, 0x02, 0xab, 0xcd,
+        0xab, 0x01, 0x12, 0x03, 0x55, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0xff, 0x02, 0x30, 0x01,
+        0x0a, 0xb1, 0x01, 0x32, 0x0d, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74,
+        0x69, 0x63, 0x00, 0x40, 0x02, 0xab, 0xcd,
     ];
 
     const RX_MSG_NORMAL: &'static [u8] = &[
-        0xab, 0x00, 0x12, 0x00, 0x03, 0x00, 0x55, 0x00, 0x05, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
-        0x7f, 0x80, 0x02, 0x00, 0x30, 0x00, 0x01, 0x00, 0x0a, 0x31, 0x80, 0x01, 0x00, 0x32, 0x00,
-        0x0d, 0x00, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69, 0x63, 0x00,
-        0x40, 0x00, 0x02, 0x00, 0xab, 0xcd,
+        0xab, 0x00, 0x01, 0x00, 0x12, 0x00, 0x03, 0x00, 0x55, 0x00, 0x05, 0x00, 0x00, 0x01, 0x02,
+        0x03, 0x04, 0x7f, 0x80, 0x02, 0x00, 0x30, 0x00, 0x01, 0x00, 0x0a, 0x31, 0x80, 0x01, 0x00,
+        0x32, 0x00, 0x0d, 0x00, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x6f, 0x6c, 0x65, 0x70, 0x74, 0x69,
+        0x63, 0x00, 0x40, 0x00, 0x02, 0x00, 0xab, 0xcd,
     ];
 
     lazy_static! {
         static ref TEST_RAW_MSG: LcsfRawMsg = LcsfRawMsg {
             prot_id: 0xab,
+            prot_ver: 1,
             cmd_id: 0x12,
             att_nb: 3,
             att_arr: vec![
