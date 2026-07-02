@@ -19,11 +19,23 @@ use lcsf_transcoder::LcsfRawMsg;
 use lcsf_validator::LcsfCmdDesc;
 use lcsf_validator::LcsfProtDesc;
 use lcsf_validator::LcsfValidCmd;
+use lcsf_validator::LcsfValidateErrorEnum;
 
 /// Callback prototype to process a valid command
 pub type ProtCallback = fn(&LcsfCore, &LcsfValidCmd);
 /// Callback prototype to send generated lcsf error messages
 pub type SendErrCallback = fn(&[u8]);
+
+/// Outcome of processing an incoming buffer
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum LcsfReceiveStatus {
+    /// Message received and dispatched
+    Ok,
+    /// Buffer could not be decoded (bad format or overflow)
+    DecodeError,
+    /// Message rejected during validation, carrying the LCSF error protocol reason
+    ValidateError(LcsfValidateErrorEnum),
+}
 
 /// Main lcsf structure
 #[derive(Debug)]
@@ -120,7 +132,7 @@ impl LcsfCore {
     /// Process an incoming lcsf message
     ///
     /// buff: buffer reference
-    pub fn receive_buff(&self, buff: &[u8]) -> bool {
+    pub fn receive_buff(&self, buff: &[u8]) -> LcsfReceiveStatus {
         // Send to transcoder
         let raw_msg = match lcsf_transcoder::decode_buff(self.lcsf_mode, buff) {
             Err(err) => {
@@ -134,7 +146,7 @@ impl LcsfCore {
                     );
                     (self.fn_send_err)(&buff);
                 }
-                return false;
+                return LcsfReceiveStatus::DecodeError;
             }
             Ok(msg) => msg,
         };
@@ -152,14 +164,15 @@ impl LcsfCore {
                     );
                     (self.fn_send_err)(&buff);
                 }
-                return false;
+                // Surface the exact validation reason (incl. version mismatch) to the caller
+                return LcsfReceiveStatus::ValidateError(err);
             }
             Ok((msg, id)) => (msg, id),
         };
         // Dispatch command
         let prot_cb = self.prot_cb_map.get(&prot_id).unwrap();
         prot_cb(self, &valid_msg);
-        true
+        LcsfReceiveStatus::Ok
     }
 
     /// Send an outgoing valid command
@@ -320,10 +333,15 @@ mod tests {
         // Add protocol
         lcsf_core.add_protocol(0xab, &TEST_PROT_DESC, test_prot_callback);
         // Test function
-        assert!(lcsf_core.receive_buff(&TEST_BUFF));
+        assert_eq!(lcsf_core.receive_buff(&TEST_BUFF), LcsfReceiveStatus::Ok);
         // Check value
         let is_valid: bool = CMD_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
+        // Version mismatch surfaces distinctly (TEST_PROT_DESC is version 1)
+        assert_eq!(
+            lcsf_core.receive_buff(&[0xab, 0x02, 0x12, 0x00]),
+            LcsfReceiveStatus::ValidateError(LcsfValidateErrorEnum::BadProtVer)
+        );
     }
 
     #[test]
@@ -352,11 +370,11 @@ mod tests {
 
         let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, false);
         // Use default error callback
-        assert!(lcsf_core.receive_buff(&err_buff));
+        assert_eq!(lcsf_core.receive_buff(&err_buff), LcsfReceiveStatus::Ok);
         // Update the error callback
         lcsf_core.update_err_cb(test_err_callback, dummy_send_callback);
         // Send buffer
-        assert!(lcsf_core.receive_buff(&err_buff));
+        assert_eq!(lcsf_core.receive_buff(&err_buff), LcsfReceiveStatus::Ok);
         // Check value
         let is_valid: bool = ERR_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
@@ -383,13 +401,19 @@ mod tests {
         let mut lcsf_core = LcsfCore::new(LcsfModeEnum::Small, true);
         lcsf_core.update_err_cb(dummy_prot_callback, test_bad_data_callback);
         // Send buffer
-        assert!(!lcsf_core.receive_buff(&bad_format_buff));
+        assert_eq!(
+            lcsf_core.receive_buff(&bad_format_buff),
+            LcsfReceiveStatus::DecodeError
+        );
         // Check value
         let is_valid: bool = BAD_DATA_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
         BAD_DATA_IS_VALID.store(false, Ordering::SeqCst);
         // Send second buffer
-        assert!(!lcsf_core.receive_buff(&bad_prot_id_buff));
+        assert_eq!(
+            lcsf_core.receive_buff(&bad_prot_id_buff),
+            LcsfReceiveStatus::ValidateError(LcsfValidateErrorEnum::UnknownProtId)
+        );
         let is_valid: bool = BAD_DATA_IS_VALID.load(Ordering::SeqCst);
         assert!(is_valid);
     }

@@ -234,6 +234,13 @@ fn fill_msg_header(lcsf_mode: LcsfModeEnum, msg: &LcsfRawMsg) -> Vec<u8> {
 
     match lcsf_mode {
         LcsfModeEnum::Small => {
+            // Smaller representation contract: header fields are 8-bit
+            debug_assert!(
+                msg.prot_id <= 0xFF
+                    && msg.prot_ver <= 0xFF
+                    && msg.cmd_id <= 0xFF
+                    && msg.att_nb <= 0xFF
+            );
             // Byte 1: Protocol id
             buffer.push(msg.prot_id as u8);
             // Byte 2: Protocol version
@@ -277,6 +284,8 @@ fn fill_att_header(lcsf_mode: LcsfModeEnum, att_id: u16, att: &LcsfRawAtt) -> Ve
 
     match lcsf_mode {
         LcsfModeEnum::Small => {
+            // Smaller representation contract: 7-bit attribute id (MSb is the complexity flag), 8-bit payload size
+            debug_assert!(att_id <= 0x7F && att.payload_size <= 0xFF);
             // Check if attribute has sub-attributes
             if att.has_subatt {
                 // Byte 1: Attribute id + MSb at 1
