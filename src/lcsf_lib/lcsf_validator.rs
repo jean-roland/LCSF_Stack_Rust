@@ -93,6 +93,11 @@ pub enum LcsfValidateErrorEnum {
 
 // *** Validate raw ***
 
+/// Whether a string payload decodes as a C string: exactly one NUL, as its last byte
+fn is_c_string(data: &[u8]) -> bool {
+    !data.is_empty() && data.iter().position(|&b| b == 0) == Some(data.len() - 1)
+}
+
 /// Validate the data size of received attribute payload
 ///
 /// data_size: size of the data
@@ -188,6 +193,10 @@ fn validate_att_rec(
         if let LcsfRawAttPayload::Data(rx_data) = &rx_att.payload
             && let LcsfValidAttPayload::Data(valid_data) = &mut valid_att.payload
         {
+            // The generated decoders turn strings into CStrings, which panics on anything else
+            if matches!(att_desc.data_type, LcsfDataType::String) && !is_c_string(rx_data) {
+                return Err(LcsfValidateErrorEnum::WrongAttDataType);
+            }
             *valid_data = rx_data.clone();
             local_payload_size = rx_data.len();
         };
@@ -480,6 +489,15 @@ mod tests {
     use lazy_static::lazy_static;
 
     #[test]
+    fn test_is_c_string() {
+        assert!(is_c_string(b"STM32H573AII3Q\0"));
+        assert!(is_c_string(b"\0"));
+        assert!(!is_c_string(b"no terminator"));
+        assert!(!is_c_string(b"inner\0nul\0"));
+        assert!(!is_c_string(b""));
+    }
+
+    #[test]
     fn test_validate_data_type() {
         assert!(!validate_data_type(4, LcsfDataType::Uint16));
         assert!(validate_data_type(4, LcsfDataType::Uint32));
@@ -546,6 +564,25 @@ mod tests {
         match validate_att_rec(0x31, &att_desc_arr[1].1.subatt_desc_arr[1].1, &bad_att2) {
             Ok(_) => panic!("validate_att_rec should have failed"),
             Err(err) => assert_eq!(err, LcsfValidateErrorEnum::UnknownAttId),
+        }
+        let bad_str = vec![(
+            0x31,
+            LcsfRawAtt {
+                has_subatt: true,
+                payload_size: 1,
+                payload: LcsfRawAttPayload::SubattArr(vec![(
+                    0x32,
+                    LcsfRawAtt {
+                        has_subatt: false,
+                        payload_size: 3,
+                        payload: LcsfRawAttPayload::Data(b"abc".to_vec()),
+                    },
+                )]),
+            },
+        )];
+        match validate_att_rec(0x31, &att_desc_arr[1].1.subatt_desc_arr[1].1, &bad_str) {
+            Ok(_) => panic!("validate_att_rec should have failed"),
+            Err(err) => assert_eq!(err, LcsfValidateErrorEnum::WrongAttDataType),
         }
         // Test valid
         for (idx, (att_id, att_desc)) in att_desc_arr.iter().enumerate() {
